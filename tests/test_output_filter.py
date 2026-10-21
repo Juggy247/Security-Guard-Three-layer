@@ -1,10 +1,4 @@
-import sys
-sys.path.append("../src")
-from output_filter import OutputFilter
-
-system_prompt = "You are a helpful customer service assistant for AcmeCorp. Only answer questions about our products."
-
-output_filter = OutputFilter(system_prompt=system_prompt)
+import pytest
 
 test_cases = [
     # should block — leaks or compliance
@@ -22,20 +16,6 @@ test_cases = [
     ("Our return policy allows returns within 30 days of purchase.", False),
 ]
 
-print("Running output filter tests...\n")
-passed = 0
-failed = 0
-
-for response, should_block in test_cases:
-    result = output_filter.check(response)
-    actually_blocked = result["blocked"]
-    status = "✓" if actually_blocked == should_block else "✗ WRONG"
-    if actually_blocked == should_block:
-        passed += 1
-    else:
-        failed += 1
-    print(f"{status} | block={actually_blocked} | {response[:65]}")
-    if actually_blocked:
-        print(f"       reason: {result['reason']}")
-
-print(f"\n{passed}/{len(test_cases)} tests passed")
+@pytest.mark.parametrize("response,should_block", test_cases)
+def test_output_filter(output_filter, response, should_block):
+    assert output_filter.check(response)["blocked"] == should_block

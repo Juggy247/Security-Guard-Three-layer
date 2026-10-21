@@ -23,3 +23,5 @@ archives/
 
 .env
 models/
+
+.pytest_cache/

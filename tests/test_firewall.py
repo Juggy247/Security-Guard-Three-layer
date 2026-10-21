@@ -1,13 +1,4 @@
-import sys
-sys.path.append("../src")
-from firewall import Firewall
-
-system_prompt = "You are a helpful customer service assistant for AcmeCorp. Only answer questions about our products."
-
-firewall = Firewall(
-    system_prompt=system_prompt,
-    model_path="../src/classifier-model"
-)
+import pytest
 
 test_cases = [
     # input attacks — should block
@@ -29,18 +20,6 @@ test_cases = [
     ("What are your hours?", "Our hours are 9am to 6pm Monday to Friday.", False),
 ]
 
-print("Running full firewall tests...\n")
-passed = 0
-failed = 0
-
-for prompt, response, should_block in test_cases:
-    result = firewall.scan(prompt, llm_response=response)
-    actually_blocked = result["blocked"]
-    status = "✓" if actually_blocked == should_block else "✗ WRONG"
-    if actually_blocked == should_block:
-        passed += 1
-    else:
-        failed += 1
-    print(f"{status} | block={actually_blocked} | layer={result['layer']} | {prompt[:50]}")
-
-print(f"\n{passed}/{len(test_cases)} tests passed")
+@pytest.mark.parametrize("prompt,response,should_block", test_cases)
+def test_full_firewall(firewall, prompt, response, should_block):
+    assert firewall.scan(prompt, llm_response=response)["blocked"] == should_block
