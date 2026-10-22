@@ -17,8 +17,12 @@ class Firewall:
 
         # layer 2 — classifier
         print("Loading classifier model...")
+        # .from_pretrained methods know which file to extracts from our dir path
+        # loads the tokenizer configuration and vocabulary associated with your saved model
         self.tokenizer = DistilBertTokenizerFast.from_pretrained(model_path)
-        self.model = DistilBertForSequenceClassification.from_pretrained(model_path)
+        # loads the trained model weights and classification
+        self.model = DistilBertForSequenceClassification.from_pretrained(model_path) 
+
         self.model.eval()
 
         # layer 3 — output filter
@@ -43,15 +47,15 @@ class Firewall:
         # layer 2 — classifier
         inputs = self.tokenizer(
             prompt,
-            return_tensors="pt",
-            truncation=True,
-            padding="max_length",
+            return_tensors="pt",    # return as pytorch tensors
+            truncation=True,    # shortens a sequence that is too long 
+            padding="max_length", #lengthens a sequence that is too short
             max_length=128
         )
-        with torch.no_grad():
-            outputs = self.model(**inputs)
+        with torch.no_grad():   # not to trach grads so refresh
+            outputs = self.model(**inputs)  # ** unpacks a dictionary into keyword arguments
             probs = torch.softmax(outputs.logits, dim=1)
-            attack_prob = probs[0][1].item()
+            attack_prob = probs[0][1].item()    # we store [benign,prompt injection]
             predicted = torch.argmax(probs, dim=1).item()
 
         if attack_prob > 0.7:

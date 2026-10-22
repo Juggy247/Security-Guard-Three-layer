@@ -23,5 +23,4 @@ archives/
 
 .env
 models/
-
-.pytest_cache/
+data/baselines/now.csv

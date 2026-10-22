@@ -39,6 +39,7 @@ class OutputFilter:
         if system_prompt:
             print("Loading similarity model for output filter...")
             self.similarity_model = SentenceTransformer("all-MiniLM-L6-v2")
+            # convert into embeddings
             self.system_prompt_embedding = self.similarity_model.encode(
                 system_prompt, convert_to_tensor=True
             )
@@ -71,10 +72,12 @@ class OutputFilter:
             response_embedding = self.similarity_model.encode(
                 response, convert_to_tensor=True
             )
+        # Calculates cosine similarity between the two embeddings.
+        #  Assuming compatible embedding dimensions, the result is a similarity score.
             similarity = util.cos_sim(
                 self.system_prompt_embedding,
                 response_embedding
-            ).item()
+            ).item()    # .item() extract single value (float) number
 
             if similarity > 0.85:
                 return {
