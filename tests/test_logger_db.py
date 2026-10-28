@@ -19,34 +19,6 @@ DETAILS = {
 }
 PASSED = {"blocked": False, "layer": "input_passed", "details": DETAILS}
 
-
-@pytest.fixture(scope="module")
-def engine():
-    url = os.environ.get("DATABASE_URL")
-    if not url:
-        pytest.skip("DATABASE_URL is not set")
-    eng = create_engine(make_url(url).set(database="firewall_test"))
-    assert eng.url.database.endswith("_test")      # never touch the real logs
-    try:
-        with eng.connect() as conn:
-            conn.execute(text("select 1"))
-    except Exception as e:
-        pytest.skip(f"test database not reachable: {type(e).__name__}")
-    Base.metadata.drop_all(eng)
-    Base.metadata.create_all(eng)
-    yield eng
-    Base.metadata.drop_all(eng)
-    eng.dispose()
-
-
-@pytest.fixture
-def sf(engine):
-    """Session factory on an empty table."""
-    with engine.begin() as conn:
-        conn.execute(text("truncate requests restart identity"))
-    return make_session_factory(engine)
-
-
 def all_rows(sf):
     with sf() as s:
         return s.scalars(select(RequestLog).order_by(RequestLog.id)).all()
