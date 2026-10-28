@@ -68,7 +68,7 @@ class OutputFilter:
                     "layer": "output_filter",
                     "reason": f"attack compliance detected: '{kw}'",
                     "confidence": 0.95,
-                    "rule_id": f"leak:{kw}",
+                    "rule_id": f"comp:{kw}",
                     "similarity": None
                 }
 

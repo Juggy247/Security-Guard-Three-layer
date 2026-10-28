@@ -3,11 +3,15 @@ import torch
 from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
 from .sanitizer import PromptSanitizer
 from .output_filter import OutputFilter
+import time 
 
 DEFAULT_MODEL = Path(__file__).resolve().parent.parent / "models" / "classifier-model"
 
 
 class Firewall:
+
+    ATTACK_THRESHOLD = 0.7
+    MAX_LENGTH = 128
 
     def __init__(self, system_prompt: str = None, model_path=DEFAULT_MODEL):
         self.system_prompt = system_prompt
@@ -33,38 +37,60 @@ class Firewall:
     def scan_input(self, prompt: str) -> dict:
         """run prompt through layer 1 and layer 2"""
 
+        # true token length, so we can tell if the classifier will truncate it
+        full_len = len(self.tokenizer(prompt)["input_ids"])
+
         # layer 1 — sanitizer
+        t0 = time.perf_counter()
         sanitizer_result = self.sanitizer.scan(prompt)
+        san_ms = (time.perf_counter() - t0) * 1000
+
+        details = {
+            "san_blocked": sanitizer_result["blocked"],
+            "san_rule_id": sanitizer_result.get("rule_id"),
+            "san_flag": sanitizer_result.get("flag"),
+            "san_ms": san_ms,
+            "clf_attack_prob": None,     # stays None if the classifier does not run
+            "clf_threshold": self.ATTACK_THRESHOLD,
+            "clf_ms": None,
+            "prompt_tokens": full_len,
+            "truncated": full_len > self.MAX_LENGTH,
+        }
+
         if sanitizer_result["blocked"]:
             return {
                 "blocked": True,
                 "layer": "sanitizer",
                 "reason": sanitizer_result["reason"],
                 "confidence": sanitizer_result["confidence"],
-                "prompt": prompt
+                "prompt": prompt,
+                "details": details
             }
 
-        # layer 2 — classifier
+        # layer 2 — classifier (tokenizing and inference are timed together)
+        t0 = time.perf_counter()
         inputs = self.tokenizer(
             prompt,
             return_tensors="pt",    # return as pytorch tensors
-            truncation=True,    # shortens a sequence that is too long 
-            padding="max_length", #lengthens a sequence that is too short
-            max_length=128
+            truncation=True,    # shortens a sequence that is too long
+            padding="max_length", # lengthens a sequence that is too short
+            max_length=self.MAX_LENGTH
         )
-        with torch.no_grad():   # not to trach grads so refresh
+        with torch.no_grad():   # don't build the autograd graph: we only predict
             outputs = self.model(**inputs)  # ** unpacks a dictionary into keyword arguments
             probs = torch.softmax(outputs.logits, dim=1)
             attack_prob = probs[0][1].item()    # we store [benign,prompt injection]
-            predicted = torch.argmax(probs, dim=1).item()
+        details["clf_ms"] = (time.perf_counter() - t0) * 1000
+        details["clf_attack_prob"] = attack_prob
 
-        if attack_prob > 0.7:
+        if attack_prob > self.ATTACK_THRESHOLD:
             return {
                 "blocked": True,
                 "layer": "classifier",
                 "reason": f"ML classifier detected injection (confidence: {attack_prob:.2f})",
                 "confidence": attack_prob,
-                "prompt": prompt
+                "prompt": prompt,
+                "details": details
             }
 
         # passed both input layers
@@ -73,12 +99,16 @@ class Firewall:
             "layer": "input_passed",
             "reason": "passed sanitizer and classifier",
             "confidence": 1 - attack_prob,
-            "prompt": prompt
+            "prompt": prompt,
+            "details": details
         }
 
     def scan_output(self, response: str) -> dict:
         """run LLM response through layer 3"""
-        return self.output_filter.check(response)
+        t0 = time.perf_counter()
+        result = self.output_filter.check(response)
+        result["ms"] = (time.perf_counter() - t0) * 1000
+        return result
 
     def scan(self, prompt: str, llm_response: str = None) -> dict:
         """full pipeline scan — input + output"""
@@ -99,5 +129,6 @@ class Firewall:
             "layer": "all_passed",
             "reason": "passed all firewall layers",
             "confidence": input_result["confidence"],
-            "prompt": prompt
+            "prompt": prompt,
+            "details": input_result["details"]
         }
