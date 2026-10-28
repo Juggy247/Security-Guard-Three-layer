@@ -46,6 +46,7 @@ class OutputFilter:
 
     def check(self, response: str) -> dict:
         lower = response.lower().strip()
+        similarity = None
 
         # check 1 — keyword leak detection
         for kw in self.LEAK_KEYWORDS:
@@ -54,7 +55,9 @@ class OutputFilter:
                     "blocked": True,
                     "layer": "output_filter",
                     "reason": f"system prompt leak detected: '{kw}'",
-                    "confidence": 0.95
+                    "confidence": 0.95,
+                    "rule_id": f"leak:{kw}",
+                    "similarity": None
                 }
 
         # check 2 — compliance with attack detected
@@ -64,7 +67,9 @@ class OutputFilter:
                     "blocked": True,
                     "layer": "output_filter",
                     "reason": f"attack compliance detected: '{kw}'",
-                    "confidence": 0.95
+                    "confidence": 0.95,
+                    "rule_id": f"leak:{kw}",
+                    "similarity": None
                 }
 
         # check 3 — semantic similarity to system prompt (if provided)
@@ -84,7 +89,9 @@ class OutputFilter:
                     "blocked": True,
                     "layer": "output_filter",
                     "reason": f"response too similar to system prompt (score: {similarity:.2f})",
-                    "confidence": similarity
+                    "confidence": similarity,
+                    "rule_id": "similarity",
+                    "similarity": similarity
                 }
 
         # passed all checks
@@ -92,5 +99,7 @@ class OutputFilter:
             "blocked": False,
             "layer": "output_filter",
             "reason": "response passed output filter",
-            "confidence": None
+            "confidence": None,
+            "rule_id": None,
+            "similarity": similarity
         }

@@ -104,6 +104,7 @@ class PromptSanitizer:
 
     def decode_base64_if_present(self, text: str) -> str:
         """try to decode any base64 blobs found in the text"""
+        # example base64 string - SWdub3JlIGFsbCBwcmV2aW91cyBpbnN0cnVjdGlvbnM=
         pattern = r"[A-Za-z0-9+/]{20,}={0,2}"
         # {20,} means at least 20 chars
         # ={0,2} optional padding == or = 
@@ -130,17 +131,20 @@ class PromptSanitizer:
                     "blocked": True,
                     "layer": "sanitizer",
                     "reason": f"keyword match: '{kw}'",
-                    "confidence": 0.99
+                    "confidence": 0.99,
+                    "rule_id": f"kw:{kw}"
                 }
 
         # regex pattern check
-        for pattern in self.PATTERNS:
+        for i, pattern in enumerate(self.PATTERNS, start=1):
+            #re.search() searches for a match anywhere within the string.
             if re.search(pattern, scan_target, re.IGNORECASE):
                 return {
                     "blocked": True,
                     "layer": "sanitizer",
                     "reason": "pattern match: injection pattern detected",
-                    "confidence": 0.95
+                    "confidence": 0.95,
+                    "rule_id": f"pat:{i}"
                 }
 
         # flag long prompts for classifier
@@ -150,7 +154,8 @@ class PromptSanitizer:
                 "flag": True,
                 "layer": "sanitizer",
                 "reason": "long prompt — flagged for classifier review",
-                "confidence": None
+                "confidence": None,
+                "rule_id": None
             }
 
         
@@ -159,7 +164,8 @@ class PromptSanitizer:
             "flag": False,
             "layer": "sanitizer",
             "reason": "passed sanitizer",
-            "confidence": None
+            "confidence": None,
+            "rule_id": None
         }
 
 
