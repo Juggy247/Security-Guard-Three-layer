@@ -15,42 +15,34 @@ SPLITS = {
     "test": ROOT / "data" / "final" / "dataset_test.csv",
     "generalization": ROOT / "data" / "final" / "generalization_test.csv",
 }
-THRESHOLD = 0.7   # same as firewall.py
-BATCH = 32
 
 
 def record(out_path: Path) -> None:
-    # heavy imports only when recording, so 'compare' stays fast
-    import torch
+    # heavy import only when recording, so 'compare' stays fast
     from three_layer_firewall.firewall import Firewall
-    from three_layer_firewall.sanitizer import PromptSanitizer
 
     fw = Firewall()
-    sanitizer = PromptSanitizer()
     rows = []
     for split, path in SPLITS.items():
         df = pd.read_csv(path)[["prompt", "label"]].dropna().reset_index(drop=True)
-        probs = []
-        for i in range(0, len(df), BATCH):
-            batch = df["prompt"].iloc[i:i + BATCH].tolist()
-            enc = fw.tokenizer(batch, return_tensors="pt", truncation=True,
-                               padding="max_length", max_length=128)
-            with torch.no_grad():
-                logits = fw.model(**enc).logits
-            probs.extend(torch.softmax(logits, dim=1)[:, 1].tolist())
         for i, (prompt, label) in enumerate(zip(df["prompt"], df["label"])):
-            san = sanitizer.scan(prompt)
+            r = fw.scan_input(prompt)      # the real code path, one prompt at a time
+            d = r["details"]
             rows.append({
                 "split": split,
                 "row": i,
                 "label": int(label),
                 "words": len(prompt.split()),
                 "prompt": prompt,
-                "san_blocked": bool(san["blocked"]),
-                "san_reason": san["reason"],
-                "clf_prob": probs[i],
-                "firewall_blocked": bool(san["blocked"]) or probs[i] > THRESHOLD,
+                "san_blocked": d["san_blocked"],
+                "san_rule_id": d["san_rule_id"],
+                "clf_prob": d["clf_attack_prob"],   # empty when the sanitizer blocked first
+                "prompt_tokens": d["prompt_tokens"],
+                "truncated": d["truncated"],
+                "firewall_blocked": r["blocked"],
             })
+            if (i + 1) % 500 == 0:
+                print(f"  {split}: {i + 1}/{len(df)}")
     out = pd.DataFrame(rows)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(out_path, index=False)

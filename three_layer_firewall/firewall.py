@@ -38,7 +38,7 @@ class Firewall:
         """run prompt through layer 1 and layer 2"""
 
         # true token length, so we can tell if the classifier will truncate it
-        full_len = len(self.tokenizer(prompt)["input_ids"])
+        full_len = len(self.tokenizer(prompt, verbose=False)["input_ids"])
 
         # layer 1 — sanitizer
         t0 = time.perf_counter()
