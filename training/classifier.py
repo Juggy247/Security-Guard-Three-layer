@@ -71,7 +71,7 @@ def compute_metrics(eval_pred):
 
 # training arguments 
 training_args = TrainingArguments(
-    output_dir="./classifier-output",
+    output_dir=str(ROOT / "models" / "checkpoints"),
     num_train_epochs=15,
     per_device_train_batch_size=16,
     per_device_eval_batch_size=16,
@@ -79,10 +79,10 @@ training_args = TrainingArguments(
     save_strategy="epoch",
     load_best_model_at_end=True,
     metric_for_best_model="f1",
-    logging_dir="./logs",
     logging_steps=10,
     warmup_steps=50,
     weight_decay=0.01,
+    save_total_limit=2, 
 )
 
 # train 
