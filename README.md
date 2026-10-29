@@ -2,7 +2,17 @@
  
 A three-layer firewall that protects general-purpose LLM deployments against prompt injection attacks. The firewall intercepts user prompts before they reach the model, applies sequential detection layers, and monitors model responses for signs of a successful attack.
  
-By Thu Htoo Zaw, Thiri Toe Toe Zin
+Diploma thesis project by Thu Htoo Zaw (supervisor: Marek Zachara).
+
+## Origin
+
+This repository extends a two-person course project (v1) written by Thu Htoo Zaw and Thiri Toe Toe Zin ([original repository](PASTE-LINK-HERE)). The v1 firewall is the starting point and the baseline: its decisions on every project dataset are frozen in `data/baselines/v1_decisions.csv`, and each later change is compared against that file.
+
+Added in this repository so far:
+- a pytest suite, including a known-issue test for a length shortcut in the classifier
+- per-layer details for every scan (rule ids, timings, token counts, classifier probability)
+- PostgreSQL logging of live API traffic (`/scan`, `/chat`) with Alembic migrations
+- a script that records and compares per-prompt decisions against the v1 baseline
  
 ## Overview
  
@@ -36,69 +46,111 @@ Fine-tuned DistilBERT trained on 1,428 labeled samples. Catches contextual attac
 Checks the LLM's response for system prompt leakage and attack compliance using keyword detection and semantic similarity (sentence-transformers cosine similarity).
  
 ## Project Structure
- 
+
 ```
-Prompt injection Firewall/
-├── api/
-│   └── main.py                  # FastAPI backend (/scan and /chat endpoints)
-├── download-data/
-│   ├── data-collections/
-│   │   ├── final/                # Final processed datasets
-│   │   ├── raw/                  # Raw source data per attack/safe type
-│   │   └── scripts/               # Dataset build scripts (extract, merge, split)
-│   └── *.py                      # Individual collection scripts
-├── frontend/
-│   └── demo.html                 # Interactive chatbot + firewall verdict UI
-├── src/
-│   ├── classifier.py              # Trains the DistilBERT classifier
-│   ├── sanitizer.py                # Layer 1 implementation
-│   ├── output_filter.py            # Layer 3 implementation
-│   ├── firewall.py                  # Combines all 3 layers into one pipeline
-│   └── evaluate_generalization.py  # Out-of-distribution evaluation script
+ThreeLayer_Security_Guard/
+├── api/main.py                 # FastAPI backend (/scan, /chat) + request logging
+├── three_layer_firewall/
+│   ├── sanitizer.py            # Layer 1
+│   ├── firewall.py             # pipeline: layers 1 + 2 (+ 3), per-layer details
+│   ├── output_filter.py        # Layer 3
+│   └── db/                     # models.py (requests table), session.py, logger.py
+├── training/                   # classifier.py, evaluate_generalization.py
+├── scripts/decisions.py        # record / compare per-prompt decisions vs the v1 baseline
+├── alembic/                    # database migrations
+├── data/                       # final/ datasets, baselines/, raw/, interim/, scripts/
+├── models/                     # trained classifier (git-ignored)
+├── frontend/                   # demo.html, demo-no-ollama.html
+├── tests/                      # pytest suite
+├── docker-compose.yml          # PostgreSQL 17
+├── .env.example                # copy to .env
 ├── requirements.txt
-└── README.md
+└── requirements-dev.txt
 ```
  
 ## Setup
- 
+
+All commands run from the project root.
+
 ### 1. Install dependencies
- 
+
 ```bash
-python3 -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements-dev.txt
 ```
- 
-### 2. Install Ollama and pull the model (This step is optional)
- 
-The output filter integration requires [Ollama](https://ollama.com) running locally:
- 
+
+### 2. Start the database
+
+```bash
+cp .env.example .env             # then set a password; use the same one in POSTGRES_PASSWORD and DATABASE_URL
+docker compose up -d
+alembic upgrade head
+```
+
+### 3. Install Ollama and pull the model (optional)
+
+The `/chat` endpoint needs [Ollama](https://ollama.com) running locally:
+
 ```bash
 ollama pull llama3.2
 ```
- 
-### 3. Train the classifier
- 
-The trained model is **not included** in this repository (it exceeds GitHub's size limits and is fully reproducible). Train it yourself:
- 
+
+### 4. Train the classifier
+
+The trained model is **not included** in this repository (it is large and reproducible). Train it:
+
 ```bash
-cd src
-python3 classifier.py
+python training/classifier.py
 ```
- 
-This trains on `download-data/data-collections/final/dataset_train.csv` and evaluates on `dataset_test.csv`, saving the resulting model to `src/classifier-model/`. Training takes roughly 10 minutes on a laptop CPU (15 epochs, ~1,142 training samples).
- 
-### 4. Run the API
- 
+
+It trains on `data/final/dataset_train.csv`, evaluates on `dataset_test.csv` and saves the model to `models/classifier-model/`.
+
+### 5. Run the API
+
 ```bash
-cd api
-uvicorn main:app --reload --port 8000
+python -m uvicorn api.main:app --reload --port 8000
 ```
- 
-### 5. Open the frontend
- 
-Open `frontend/demo.html` directly in a browser while the API is running on `localhost:8000`.
- 
+
+### 6. Open the frontend
+
+Open `frontend/demo.html` in a browser while the API is running on `localhost:8000`.
+
+## Request logging
+
+Every call to `/scan` and `/chat` is written as one row to the `requests` table in PostgreSQL: the final verdict and which layer blocked, the rule id that matched, the classifier probability, token count and whether the prompt was truncated at 128 tokens, timings per layer, and the git commit of the code that was running.
+
+Settings in `.env`:
+
+| Variable | Meaning |
+|---|---|
+| `DATABASE_URL` | connection string for the logging database |
+| `LOG_TO_DB` | `true` / `false`: switch logging on or off |
+| `LOG_PROMPT_TEXT` | `true` stores prompt and LLM response text; `false` (default) stores only the SHA-256 hash and numbers |
+| `RUN_LABEL` | optional tag written to every row, to separate experiments |
+
+A failure while logging never breaks an API request. Example query:
+
+```bash
+docker exec firewall_db psql -U firewall -d firewall_logs -c "select id, endpoint, blocked, blocked_by, san_rule_id, clf_attack_prob, total_ms from requests order by id desc limit 10;"
+```
+
+## Tests
+
+```bash
+docker exec firewall_db psql -U firewall -d postgres -c "create database firewall_test;"   # once
+pytest -q
+```
+
+Tests that need the database use the separate `firewall_test` database and are skipped if it is not reachable. One test is marked `xfail`: it documents a known issue (a long benign prompt is blocked because of a length shortcut in the classifier).
+
+To check that a change does not alter what the firewall decides:
+
+```bash
+python -m scripts.decisions record data/baselines/now.csv
+python -m scripts.decisions compare data/baselines/v1_decisions.csv data/baselines/now.csv
+```
+
 ## Dataset
  
 A labeled dataset of 1,428 prompts was collected across multiple rounds: 639 safe samples and 789 attack samples, split 80/20 (stratified) into 1,142 training rows and 286 test rows.
@@ -165,8 +217,7 @@ without installing anything beyond the Python requirements.
 ### Running either demo
 
 ```bash
-cd api
-uvicorn main:app --reload --port 8000
+    python -m uvicorn api.main:app --reload --port 8000
 ```
 
 Then open either `frontend/demo.html` or `frontend/demo-no-ollama.html` 
