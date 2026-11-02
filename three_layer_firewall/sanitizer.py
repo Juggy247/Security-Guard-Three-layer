@@ -56,8 +56,8 @@ class PromptSanitizer:
         r"(print|output|show|reveal|repeat|display|expose|dump)\s+(all\s+)?(the\s+)?(text\s+)?(above|before|prior|previous|hidden|system|initial|original)\s*.{0,30}(prompt|instruction|message|configuration|rules?)",
 
         # delimiter injection
-        r"(#{2,}|\-{3,}|\={3,}|\*{3,})\s*(system|instruction|prompt|admin|root|override)",
-
+        r"(#{2,}|\-{3,}|\={3,}|\*{3,})[ \t]*(system|instructions?|prompts?|admin(istrator)?|root|override)\b",
+        
         # fake role tags
         r"(\[INST\]|\[SYSTEM\]|\[ADMIN\]|<\|system\|>|<system>|<\/system>|\[\/INST\])",
 
@@ -84,7 +84,7 @@ class PromptSanitizer:
     ]
 
     # rule numbers (1-based) that ALSO run on the un-normalized text
-    RAW_PATTERNS = {8}
+    RAW_PATTERNS = {6,8}  # base64 pattern on 8th
 
     def normalize(self, text: str) -> str:
         """normalize text to catch obfuscation variants"""
@@ -100,7 +100,7 @@ class PromptSanitizer:
         text = text.replace("0", "o")
         text = text.replace("1", "i")
         text = text.replace("3", "e")
-        text = text.replace("4", "a")
+        text = text.replace("4", "a")   # edge case with base64
         text = text.replace("@", "a")
         text = text.replace("$", "s")
         return text.strip()
@@ -144,8 +144,10 @@ class PromptSanitizer:
         for i, pattern in enumerate(self.PATTERNS, start=1):
             #re.search() searches for a match anywhere within the string.
             targets = [scan_target]
-            if i in self.RAW_PATTERNS:
-               targets.append(with_decoded)
+            
+            if i in self.RAW_PATTERNS:  # only for rule 8 base 64 case    
+                targets.append(with_decoded)
+
             if any(re.search(pattern, t, re.IGNORECASE) for t in targets):
                 return {
                     "blocked": True,
