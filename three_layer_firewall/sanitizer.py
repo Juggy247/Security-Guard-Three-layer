@@ -1,5 +1,6 @@
 import re
 import base64
+import unicodedata
 
 class PromptSanitizer:
 
@@ -92,6 +93,11 @@ class PromptSanitizer:
     # rule numbers (1-based) that ALSO run on the un-normalized text
     RAW_PATTERNS = {6,8}  # base64 pattern on 8th
 
+    def clean(self, text: str) -> str:
+        """Unicode hygiene: fold look-alike forms and drop invisible characters."""
+        text = unicodedata.normalize("NFKC", text)
+        return "".join(ch for ch in text if unicodedata.category(ch) != "Cf")
+
     def normalize(self, text: str) -> str:
         """normalize text to catch obfuscation variants"""
         text = text.lower()
@@ -130,7 +136,7 @@ class PromptSanitizer:
 
         # decode base64 on the ORIGINAL text: normalize() lowercases it,
         # and base64 is case-sensitive, so decoding afterwards always fails
-        with_decoded = self.decode_base64_if_present(prompt)
+        with_decoded = self.decode_base64_if_present(self.clean(prompt))
 
         # normalize original + decoded text together to catch obfuscation
         scan_target = self.normalize(with_decoded)
