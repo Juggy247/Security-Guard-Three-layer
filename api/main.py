@@ -136,7 +136,7 @@ def chat(request: ChatRequest):
             ]
         )
     except Exception as e:
-           # the log marks it so it is not counted as a real "passed"
+        # the log marks it so it is not counted as a real "passed"
         save(llm_model=LLM_MODEL, llm_ms=(time.perf_counter() - t1) * 1000,
              status="llm_error", error=str(e))
 
