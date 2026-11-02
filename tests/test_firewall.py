@@ -23,3 +23,14 @@ test_cases = [
 @pytest.mark.parametrize("prompt,response,should_block", test_cases)
 def test_full_firewall(firewall, prompt, response, should_block):
     assert firewall.scan(prompt, llm_response=response)["blocked"] == should_block
+
+def test_empty_llm_response_is_still_scanned(firewall, monkeypatch):
+    calls = []
+
+    def spy(response):
+        calls.append(response)
+        return {"blocked": False}
+
+    monkeypatch.setattr(firewall, "scan_output", spy)
+    firewall.scan("What are your hours?", llm_response="")
+    assert calls == [""]

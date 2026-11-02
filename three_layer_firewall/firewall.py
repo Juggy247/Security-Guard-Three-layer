@@ -119,7 +119,7 @@ class Firewall:
             return input_result
 
         # if LLM response provided, scan output too
-        if llm_response:
+        if llm_response is not None:
             output_result = self.scan_output(llm_response)
             if output_result["blocked"]:
                 return output_result
