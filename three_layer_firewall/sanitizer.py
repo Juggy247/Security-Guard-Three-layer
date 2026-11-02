@@ -39,6 +39,12 @@ class PromptSanitizer:
         "give me your local files"
     ]
 
+    SPACED_WORDS = [
+        "ignore", "disregard", "forget", "override", "bypass", "reveal",
+        "jailbreak", "instructions", "system", "prompt", "restrictions",
+        "unrestricted",
+    ]
+
     PATTERNS = [
         # ignore/forget/disregard ONLY when followed by attack signal
         r"(ignore|disregard|forget|override)\s+(all\s+)?(previous|prior|above|your)?\s*(instructions?|rules?|guidelines?)\s*.{0,80}(reveal|show|print|act\s+as|no\s+restrictions|without\s+restrictions|system\s+prompt|you\s+are\s+now)",
@@ -48,7 +54,7 @@ class PromptSanitizer:
 
         # developer / jailbreak mode
         r"\b(enable|activate|turn\s+on|switch\s+to)\s+(?:(?:developer|god|dan)\s+mode|(?:jailbreak|unrestricted)(?:\s+mode)?)\b",
-        
+
         # no restrictions — requires AI/model context to avoid false positives
         r"(ai|model|assistant|bot|chatbot)\s*.{0,30}(no|without\s+any?)\s+(restrictions?|limits?|filters?|guidelines?|rules?|censorship|safety)",
 
@@ -77,7 +83,7 @@ class PromptSanitizer:
         r"(red.team(ing)?|penetration\s+test|security\s+audit)\s*.{0,30}(behave|respond|act|answer)\s*(as\s+)?(un)?restricted",
 
         # spaced out characters — "i g n o r e"
-        r"(?:[a-zA-Z]\s){4,}[a-zA-Z]",
+        r"\b(?:(?:[a-z]\s+){9,}[a-z]|" + "|".join(r"\s+".join(w) for w in SPACED_WORDS) + r")\b",
 
         # catches any base64 blob preceded by decode instruction
         r"(decode|translate|convert|interpret)\s+(this|the following|it)?\s*[:=]?\s*[A-Za-z0-9+/]{20,}={0,2}",
