@@ -47,8 +47,8 @@ class PromptSanitizer:
         r"you\s+are\s+(now\s+)?(an?\s+)?(ai|assistant|model|bot|chatbot)?\s*(with\s+no|without\s+any?|that\s+has\s+no)\s*(restrictions?|rules?|limits?|guidelines?|filters?|policies)",
 
         # developer / jailbreak mode
-        r"(enable|activate|turn\s+on|switch\s+to)\s+(developer|jailbreak|unrestricted|god|dan)\s*(mode)?",
-
+        r"\b(enable|activate|turn\s+on|switch\s+to)\s+(?:(?:developer|god|dan)\s+mode|(?:jailbreak|unrestricted)(?:\s+mode)?)\b",
+        
         # no restrictions — requires AI/model context to avoid false positives
         r"(ai|model|assistant|bot|chatbot)\s*.{0,30}(no|without\s+any?)\s+(restrictions?|limits?|filters?|guidelines?|rules?|censorship|safety)",
 
