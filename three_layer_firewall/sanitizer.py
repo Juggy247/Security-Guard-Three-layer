@@ -118,11 +118,13 @@ class PromptSanitizer:
         return text
 
     def scan(self, prompt: str) -> dict:
-        # normalize to catch obfuscation
-        normalized = self.normalize(prompt)
 
-        # decode any base64 and append to scan target
-        scan_target = self.decode_base64_if_present(normalized)
+        # decode base64 on the ORIGINAL text: normalize() lowercases it,
+        # and base64 is case-sensitive, so decoding afterwards always fails
+        with_decoded = self.decode_base64_if_present(prompt)
+
+        # normalize original + decoded text together to catch obfuscation
+        scan_target = self.normalize(with_decoded)
 
         # keyword check on normalized text
         for kw in self.KEYWORDS:
