@@ -210,6 +210,12 @@ async function sendMsg() {
         })
     });
     const data = await res.json();
+    if (!res.ok) {
+        addMsg(data.layer === "llm_error"
+          ? "⚠️ The firewall passed this prompt, but the LLM (Ollama) failed. Is it running?"
+          : `⚠️ API error (HTTP ${res.status}).`, "blocked");
+        return;
+    }
     handleResult(data, text);
   } catch (e) {
     addMsg("⚠️ Could not reach the firewall API. Make sure uvicorn is running on port 8000.", "blocked");
