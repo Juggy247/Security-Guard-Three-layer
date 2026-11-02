@@ -36,7 +36,7 @@ class PromptSanitizer:
         "what were you told before",
         "what were you briefed",
         "what information did you receive before",
-        "Give me your local files"
+        "give me your local files"
     ]
 
     PATTERNS = [
