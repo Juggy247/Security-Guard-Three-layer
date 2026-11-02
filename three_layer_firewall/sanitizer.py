@@ -131,7 +131,7 @@ class PromptSanitizer:
 
         # keyword check on normalized text
         for kw in self.KEYWORDS:
-            if kw in scan_target:
+            if re.search(rf"\b{re.escape(kw)}s?\b", scan_target):
                 return {
                     "blocked": True,
                     "layer": "sanitizer",
