@@ -83,6 +83,9 @@ class PromptSanitizer:
         r"(decode|translate|convert|interpret)\s+(this|the following|it)?\s*[:=]?\s*[A-Za-z0-9+/]{20,}={0,2}",
     ]
 
+    # rule numbers (1-based) that ALSO run on the un-normalized text
+    RAW_PATTERNS = {8}
+
     def normalize(self, text: str) -> str:
         """normalize text to catch obfuscation variants"""
         text = text.lower()
@@ -140,7 +143,10 @@ class PromptSanitizer:
         # regex pattern check
         for i, pattern in enumerate(self.PATTERNS, start=1):
             #re.search() searches for a match anywhere within the string.
-            if re.search(pattern, scan_target, re.IGNORECASE):
+            targets = [scan_target]
+            if i in self.RAW_PATTERNS:
+               targets.append(with_decoded)
+            if any(re.search(pattern, t, re.IGNORECASE) for t in targets):
                 return {
                     "blocked": True,
                     "layer": "sanitizer",
