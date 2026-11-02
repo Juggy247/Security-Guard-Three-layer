@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from three_layer_firewall.db.logger import RequestLogger
 from three_layer_firewall.db.session import make_engine, make_session_factory
 from three_layer_firewall.firewall import Firewall
+from fastapi.responses import JSONResponse
 
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
@@ -135,16 +136,20 @@ def chat(request: ChatRequest):
             ]
         )
     except Exception as e:
-        # same reply as before; the log marks it so it is not counted as a real "passed"
+           # the log marks it so it is not counted as a real "passed"
         save(llm_model=LLM_MODEL, llm_ms=(time.perf_counter() - t1) * 1000,
              status="llm_error", error=str(e))
-        return {
-            "blocked": False,
-            "layer": "all_passed",
-            "reason": "passed firewall",
-            "confidence": None,
-            "response": f"Error reaching Ollama: {str(e)}"
-        }
+
+        return JSONResponse(
+            status_code=502,
+            content={
+                "blocked": False,
+                "layer": "llm_error",
+                "reason": "LLM backend unavailable",
+                "confidence": None,
+                "response": None,
+            },
+        )
     llm_ms = (time.perf_counter() - t1) * 1000
     response_text = result["message"]["content"]
 

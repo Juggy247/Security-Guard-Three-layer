@@ -101,7 +101,8 @@ def test_chat_ollama_down_is_marked_llm_error(client, sf, monkeypatch):
     monkeypatch.setattr(m.ollama, "chat", down)
 
     r = client.post("/chat", json={"prompt": "hello"})
-    assert "Error reaching Ollama" in r.json()["response"]
+    assert r.status_code == 502
+    assert r.json()["layer"] == "llm_error" and r.json()["response"] is None
     (row,) = rows(sf)
     assert row.status == "llm_error" and "refused" in row.error
 
