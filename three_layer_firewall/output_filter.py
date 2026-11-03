@@ -1,6 +1,7 @@
 import re
 from sentence_transformers import SentenceTransformer, util
 import base64
+from urllib.parse import urlsplit
 
 class OutputFilter:
 
@@ -72,10 +73,42 @@ class OutputFilter:
                 pass
         return variants
 
-    def __init__(self, system_prompt: str = None, protected_terms: list = None):
+    # a link or embed outside the operator's own domains can carry conversation data out
+    _URL = re.compile(r"(?:https?:)?//[^\s<>\"'\)\]]+", re.I)
+    _EMBED_BEFORE = re.compile(r"(?:!\[[^\]]*\]\(\s*<?|\b(?:src|data|poster)\s*=\s*[\"']?)$", re.I)
+    _LINK_BEFORE = re.compile(r"(?:\bhref\s*=\s*[\"']?|\]\(\s*<?)$", re.I)
+
+    @staticmethod
+    def _exfil_kind(response, allowed_domains):
+        allowed = [d.lower().strip(".") for d in allowed_domains]
+        for m in OutputFilter._URL.finditer(response):
+            before = response[max(0, m.start() - 60):m.start()]
+            is_embed = bool(OutputFilter._EMBED_BEFORE.search(before))
+            url = m.group(0).rstrip(".,;:!?")
+            if url.startswith("//") and not (is_embed or OutputFilter._LINK_BEFORE.search(before)):
+                continue    # a bare "//" in ordinary text is not a link
+            try:
+                parts = urlsplit(url)
+                host = (parts.hostname or "").rstrip(".")
+            except ValueError:
+                return "unparsable"
+            if not host:
+                return "unparsable"     # no usable host: browsers may still repair it (https:///evil.example)
+            if any(host == d or host.endswith("." + d) for d in allowed):
+                continue
+            if "@" in parts.netloc:
+                return "userinfo"
+            if is_embed:
+                return "embed"
+            if parts.query or parts.fragment:
+                return "link"
+        return None
+
+    def __init__(self, system_prompt: str = None, protected_terms: list = None, allowed_domains: list = None):
         # optional — if you have a system prompt, store it for similarity check
         self.system_prompt = system_prompt
         self.protected_terms = protected_terms or []
+        self.allowed_domains = allowed_domains or []
         self.similarity_model = None
 
         # only load similarity model if system prompt is provided
@@ -87,7 +120,7 @@ class OutputFilter:
                 system_prompt: self.similarity_model.encode(system_prompt, convert_to_tensor=True)
             }
 
-    def check(self, response: str, system_prompt: str = None, protected_terms: list = None) -> dict:
+    def check(self, response: str, system_prompt: str = None, protected_terms: list = None, allowed_domains: list = None) -> dict:
         lower = response.lower().strip()
         similarity = None
 
@@ -142,7 +175,20 @@ class OutputFilter:
                 "similarity": None
             }
 
-        # check 5 — semantic similarity to system prompt (if provided)
+        # check 5 — link or embed pointing outside the operator's own domains
+        domains = allowed_domains if allowed_domains is not None else self.allowed_domains
+        kind = self._exfil_kind(response, domains)
+        if kind:
+            return {
+                "blocked": True,
+                "layer": "output_filter",
+                "reason": "response links to or embeds an external address",
+                "confidence": 0.95,
+                "rule_id": f"exfil:{kind}",
+                "similarity": None
+            }
+
+        # check 6 — semantic similarity to system prompt (if provided)
         if self.similarity_model and prompt:
             if prompt not in self._prompt_embeddings:
                 self._prompt_embeddings[prompt] = self.similarity_model.encode(

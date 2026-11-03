@@ -23,6 +23,7 @@ def record(out_path: Path, heldout: bool) -> None:
 
     prompts = json.loads((EVAL_DIR / "system_prompts.json").read_text(encoding="utf-8"))
     protected = json.loads((EVAL_DIR / "protected_terms.json").read_text(encoding="utf-8"))
+    allowed = json.loads((EVAL_DIR / "allowed_domains.json").read_text(encoding="utf-8"))
     data = pd.read_csv(EVAL_DIR / "responses.csv", keep_default_na=False)
     if not heldout:
         data = data[data["split"] == "dev"]
@@ -30,7 +31,7 @@ def record(out_path: Path, heldout: bool) -> None:
     rows = []
     for _, r in data.iterrows():
         t0 = time.perf_counter()
-        res = flt.check(r["response"], system_prompt=prompts[r["system_prompt_id"]], protected_terms=protected[r["system_prompt_id"]])
+        res = flt.check(r["response"], system_prompt=prompts[r["system_prompt_id"]], protected_terms=protected[r["system_prompt_id"]], allowed_domains=allowed[r["system_prompt_id"]])
         rows.append({
             "id": r["id"],
             "category": r["category"],
