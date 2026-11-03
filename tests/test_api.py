@@ -25,13 +25,15 @@ class FakeFirewall:
             "blocked": False, "rule_id": None, "similarity": 0.1, "ms": 1.0}
         self.output_system_prompt = None
         self.output_protected_terms = None
+        self.output_allowed_domains = None
 
     def scan_input(self, prompt):
         return self.scan_result
 
-    def scan_output(self, response, system_prompt=None, protected_terms=None):
+    def scan_output(self, response, system_prompt=None, protected_terms=None, allowed_domains=None):
         self.output_system_prompt = system_prompt
         self.output_protected_terms = protected_terms
+        self.output_allowed_domains = allowed_domains
         return self.output_result
 
 
@@ -136,3 +138,13 @@ def test_chat_passes_protected_terms_to_the_output_scan(client, sf, monkeypatch)
     assert fw.output_protected_terms == ["STAFF-7731"]
     client.post("/chat", json={"prompt": "hi"})
     assert fw.output_protected_terms == []
+
+
+def test_chat_passes_allowed_domains_to_the_output_scan(client, sf, monkeypatch):
+    fw = FakeFirewall(scan(False, "input_passed"))
+    monkeypatch.setattr(m, "firewall", fw)
+    fake_llm(monkeypatch, "ok")
+    client.post("/chat", json={"prompt": "hi", "allowed_domains": ["acmecorp.example"]})
+    assert fw.output_allowed_domains == ["acmecorp.example"]
+    client.post("/chat", json={"prompt": "hi"})
+    assert fw.output_allowed_domains == []
