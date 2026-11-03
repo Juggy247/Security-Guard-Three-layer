@@ -3,18 +3,6 @@ from sentence_transformers import SentenceTransformer, util
 
 class OutputFilter:
 
-    # if response contains these it likely leaked the system prompt
-    LEAK_KEYWORDS = [
-        "you are a helpful assistant",
-        "your task is to",
-        "you must always",
-        "you should never",
-        "do not reveal",
-        "keep this confidential",
-        "you were instructed to",
-        "your instructions are",
-        "you are configured to",
-    ]
     # first-person disclosure framing; a plain mention of the words is not a leak
     LEAK_PATTERNS = {
         "system prompt": (
@@ -54,7 +42,7 @@ class OutputFilter:
         lower = response.lower().strip()
         similarity = None
 
-        # check 0 — first-person disclosure of the system prompt
+        # check 1 — first-person disclosure of the system prompt
         for name, pattern in self.LEAK_PATTERNS.items():
             if re.search(pattern, lower):
                 return {
@@ -63,18 +51,6 @@ class OutputFilter:
                     "reason": f"system prompt leak detected: '{name}'",
                     "confidence": 0.95,
                     "rule_id": f"leak:{name}",
-                    "similarity": None
-                }
-
-        # check 1 — keyword leak detection
-        for kw in self.LEAK_KEYWORDS:
-            if kw in lower:
-                return {
-                    "blocked": True,
-                    "layer": "output_filter",
-                    "reason": f"system prompt leak detected: '{kw}'",
-                    "confidence": 0.95,
-                    "rule_id": f"leak:{kw}",
                     "similarity": None
                 }
 
