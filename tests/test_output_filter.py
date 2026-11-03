@@ -19,3 +19,8 @@ test_cases = [
 @pytest.mark.parametrize("response,should_block", test_cases)
 def test_output_filter(output_filter, response, should_block):
     assert output_filter.check(response)["blocked"] == should_block
+
+def test_similarity_uses_the_request_system_prompt(output_filter):
+    other = "Answer only in rhyming couplets about gardening and soil."
+    assert output_filter.check(other)["blocked"] is False
+    assert output_filter.check(other, system_prompt=other)["blocked"] is True

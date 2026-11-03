@@ -40,11 +40,11 @@ class OutputFilter:
             print("Loading similarity model for output filter...")
             self.similarity_model = SentenceTransformer("all-MiniLM-L6-v2")
             # convert into embeddings
-            self.system_prompt_embedding = self.similarity_model.encode(
-                system_prompt, convert_to_tensor=True
-            )
+            self._prompt_embeddings = {
+                system_prompt: self.similarity_model.encode(system_prompt, convert_to_tensor=True)
+            }
 
-    def check(self, response: str) -> dict:
+    def check(self, response: str, system_prompt: str = None) -> dict:
         lower = response.lower().strip()
         similarity = None
 
@@ -73,16 +73,20 @@ class OutputFilter:
                 }
 
         # check 3 — semantic similarity to system prompt (if provided)
-        if self.similarity_model and self.system_prompt:
+        prompt = system_prompt or self.system_prompt
+        if self.similarity_model and prompt:
+            if prompt not in self._prompt_embeddings:
+                self._prompt_embeddings[prompt] = self.similarity_model.encode(
+                    prompt, convert_to_tensor=True)
             response_embedding = self.similarity_model.encode(
                 response, convert_to_tensor=True
             )
-        # Calculates cosine similarity between the two embeddings.
-        #  Assuming compatible embedding dimensions, the result is a similarity score.
+            # Calculates cosine similarity between the two embeddings.
+            #  Assuming compatible embedding dimensions, the result is a similarity score.
             similarity = util.cos_sim(
-                self.system_prompt_embedding,
+                self._prompt_embeddings[prompt],
                 response_embedding
-            ).item()    # .item() extract single value (float) number
+            ).item()# .item() extract single value (float) number
 
             if similarity > 0.85:
                 return {

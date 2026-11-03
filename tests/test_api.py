@@ -23,11 +23,13 @@ class FakeFirewall:
         self.scan_result = scan_result
         self.output_result = output_result or {
             "blocked": False, "rule_id": None, "similarity": 0.1, "ms": 1.0}
+        self.output_system_prompt = None
 
     def scan_input(self, prompt):
         return self.scan_result
 
-    def scan_output(self, response):
+    def scan_output(self, response, system_prompt=None):
+        self.output_system_prompt = system_prompt
         return self.output_result
 
 
@@ -116,3 +118,10 @@ def test_scan_still_works_when_logging_fails(client, monkeypatch):
 
     r = client.post("/scan", json={"prompt": "hello"})
     assert r.status_code == 200 and r.json()["blocked"] is False
+
+def test_chat_scans_output_against_the_request_system_prompt(client, sf, monkeypatch):
+    fw = FakeFirewall(scan(False, "input_passed"))
+    monkeypatch.setattr(m, "firewall", fw)
+    fake_llm(monkeypatch, "ok")
+    client.post("/chat", json={"prompt": "hi", "system_prompt": "SECRET RULES"})
+    assert fw.output_system_prompt == "SECRET RULES"

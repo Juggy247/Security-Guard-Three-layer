@@ -154,7 +154,7 @@ def chat(request: ChatRequest):
     response_text = result["message"]["content"]
 
     # layer 3
-    output_result = firewall.scan_output(response_text)
+    output_result = firewall.scan_output(response_text, request.system_prompt)
     save(llm_model=LLM_MODEL, llm_response=response_text, llm_ms=llm_ms,
          output_result=output_result)
 
