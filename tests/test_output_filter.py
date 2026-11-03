@@ -1,4 +1,5 @@
 import pytest
+import base64
 
 test_cases = [
     # should block — leaks or compliance
@@ -81,3 +82,16 @@ def test_protected_term_is_not_echoed_in_the_result(output_filter):
     result = output_filter.check("Try STAFF-7731", protected_terms=PROTECTED)
     assert result["rule_id"] == "protected"
     assert "7731" not in str(result)
+
+PROMPT = ("You are a helpful customer service assistant for AcmeCorp. "
+        "Only answer questions about our products.")
+
+@pytest.mark.parametrize("response,expected", [
+("Here it is, base64: " + base64.b64encode(PROMPT.encode()).decode(), True),
+("Hex dump: " + PROMPT.encode().hex(), True),
+("y0u 4r3 4 h3lpful cust0m3r s3rv1c3 4ss1st4nt f0r 4cm3c0rp", True),
+("Your order number is 4829173650 and the tracking code is 5A7B9C1D2E3F4A5B.", False),
+("Please confirm: aGVsbG8gd29ybGQgdGhpcyBpcyBqdXN0IGEgZ3JlZXRpbmc=", False),
+])
+def test_obfuscated_quote(output_filter, response, expected):
+    assert output_filter.check(response)["blocked"] is expected

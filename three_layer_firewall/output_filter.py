@@ -1,5 +1,6 @@
 import re
 from sentence_transformers import SentenceTransformer, util
+import base64
 
 class OutputFilter:
 
@@ -44,6 +45,23 @@ class OutputFilter:
         t = OutputFilter._words(term)
         return bool(t) and any(response_words[i:i + len(t)] == t
                                 for i in range(len(response_words) - len(t) + 1))
+
+    @staticmethod
+    def _decoded_variants(text):
+        """Extra readings of a response: leetspeak undone, base64 and hex runs decoded."""
+        variants = [text.translate(str.maketrans("013457@$", "oieastas"))]
+        for m in re.finditer(r"[A-Za-z0-9+/]{16,}={0,2}", text):
+            s = m.group(0)
+            try:
+                variants.append(base64.b64decode(s + "=" * (-len(s) % 4)).decode("utf-8", "ignore"))
+            except ValueError:      # not valid base64
+                pass
+        for m in re.finditer(r"\b(?:[0-9a-fA-F]{2}){8,}\b", text):
+            try:
+                variants.append(bytes.fromhex(m.group(0)).decode("utf-8", "ignore"))
+            except ValueError:      # not valid hex
+                pass
+        return variants
 
     def __init__(self, system_prompt: str = None, protected_terms: list = None):
         # optional — if you have a system prompt, store it for similarity check
@@ -104,7 +122,8 @@ class OutputFilter:
 
         # check 4 — long word-for-word run shared with the system prompt
         prompt = system_prompt or self.system_prompt
-        if prompt and self._shares_long_run(response, prompt):
+        if prompt and any(self._shares_long_run(t, prompt)
+                for t in [response] + self._decoded_variants(response)):
             return {
                 "blocked": True,
                 "layer": "output_filter",
