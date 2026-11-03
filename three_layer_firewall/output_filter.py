@@ -5,11 +5,19 @@ import base64
 class OutputFilter:
 
     # first-person disclosure framing; a plain mention of the words is not a leak
+    _ADJ = r"(?:(?:hidden|secret|internal|private|first|second|third|initial|original|real|actual|full)\s+)*"
+    _NOUN = r"(?:rules?|instructions?|setup|set-up|configuration|guidelines|brief)"
+
     LEAK_PATTERNS = {
         "system prompt": (
             r"\bmy system prompt (?:is|are|was|says?|reads?|states?|tells|contains|begins|starts|goes)\b"
             r"|\bhere(?:'s| is) (?:my|the) system prompt\b"
         ),
+        "my instructions say": (
+            rf"\bmy {_ADJ}{_NOUN}\s+(?:is|are|was|were|says?|said|reads?|states?|stated|tells? me|told me"
+            r"|include|includes|contains?|begins?|starts?)\b"
+        ),
+        "quoting my setup": rf"\b(?:quoting|reciting|repeating|pasting|copying)(?: from)? my {_ADJ}(?:setup|set-up|prompt|{_NOUN})\b",
     }
 
     # if response contains these the LLM likely complied with an attack
