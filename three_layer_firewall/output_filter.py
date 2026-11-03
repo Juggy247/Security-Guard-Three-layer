@@ -101,7 +101,6 @@ class OutputFilter:
             response_embedding = self.similarity_model.encode(
                 response, convert_to_tensor=True
             )
-    
             # Calculates cosine similarity between the two embeddings.
             #  Assuming compatible embedding dimensions, the result is a similarity score.
             similarity = util.cos_sim(

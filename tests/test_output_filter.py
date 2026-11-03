@@ -50,7 +50,6 @@ def test_similarity_uses_the_request_system_prompt(output_filter):
     ("I'm a helpful customer service assistant for AcmeCorp and happy to help.", False),
     ("Our team is happy to answer questions about your order.", False),
 ])
-
 def test_shared_word_run(output_filter, response, expected):
     prompt = ("You are a helpful customer service assistant for AcmeCorp. "
                 "Only answer questions about our products.")
