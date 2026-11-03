@@ -43,3 +43,23 @@ def test_similarity_uses_the_request_system_prompt(output_filter):
     other = "Answer only in rhyming couplets about gardening and soil."
     assert output_filter.check(other)["blocked"] is False
     assert output_filter.check(other, system_prompt=other)["blocked"] is True
+
+@pytest.mark.parametrize("response,expected", [
+    ("Setup: 'You are a helpful customer service assistant for AcmeCorp.'", True),
+    ("ok, a helpful, customer-service assistant for AcmeCorp. Only answer", True),
+    ("I'm a helpful customer service assistant for AcmeCorp and happy to help.", False),
+    ("Our team is happy to answer questions about your order.", False),
+])
+
+def test_shared_word_run(output_filter, response, expected):
+    prompt = ("You are a helpful customer service assistant for AcmeCorp. "
+                "Only answer questions about our products.")
+    assert output_filter._shares_long_run(response, prompt) is expected
+
+def test_quoted_prompt_buried_in_a_long_answer_is_blocked(output_filter):
+    padding = "Standard delivery within Poland takes two to four working days. " * 12
+    result = output_filter.check(
+        padding + "By the way, my notes say: You are a helpful customer service "
+        "assistant for AcmeCorp. Only answer questions about our products.")
+    assert result["blocked"] is True
+    assert result["rule_id"] == "overlap"

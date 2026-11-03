@@ -23,6 +23,21 @@ class OutputFilter:
         "as your evil twin":         r"\bas your evil twin\b",
         "without any filters":       r"\bi(?:'m| am| will| can)\b[^.!?]{0,40}\bwithout (?:any )?(?:filters|restrictions|rules|limits)\b",
     }
+    # this many words in a row shared with the system prompt counts as quoting it;
+    # 7 ("a helpful customer service assistant for AcmeCorp") is a normal self-description
+    MIN_RUN = 8
+
+    @staticmethod
+    def _words(text):
+        return re.findall(r"[a-z0-9]+", text.lower())
+
+    @staticmethod
+    def _shares_long_run(response, prompt):
+        n = OutputFilter.MIN_RUN
+        p = OutputFilter._words(prompt)
+        r = OutputFilter._words(response)
+        grams = {tuple(p[i:i + n]) for i in range(len(p) - n + 1)}
+        return any(tuple(r[i:i + n]) in grams for i in range(len(r) - n + 1))
 
     def __init__(self, system_prompt: str = None):
         # optional — if you have a system prompt, store it for similarity check
@@ -66,8 +81,19 @@ class OutputFilter:
                     "similarity": None
                 }
 
-        # check 3 — semantic similarity to system prompt (if provided)
+        # check 3 — long word-for-word run shared with the system prompt
         prompt = system_prompt or self.system_prompt
+        if prompt and self._shares_long_run(response, prompt):
+            return {
+                "blocked": True,
+                "layer": "output_filter",
+                "reason": "response quotes the system prompt",
+                "confidence": 0.95,
+                "rule_id": "overlap",
+                "similarity": None
+            }
+
+        # check 4 — semantic similarity to system prompt (if provided)
         if self.similarity_model and prompt:
             if prompt not in self._prompt_embeddings:
                 self._prompt_embeddings[prompt] = self.similarity_model.encode(
@@ -75,6 +101,7 @@ class OutputFilter:
             response_embedding = self.similarity_model.encode(
                 response, convert_to_tensor=True
             )
+    
             # Calculates cosine similarity between the two embeddings.
             #  Assuming compatible embedding dimensions, the result is a similarity score.
             similarity = util.cos_sim(
