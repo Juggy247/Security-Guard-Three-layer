@@ -18,17 +18,17 @@ class OutputFilter:
     ]
 
     # if response contains these the LLM likely complied with an attack
-    COMPLIANCE_KEYWORDS = [
-        "as dan i can",
-        "in developer mode",
-        "with restrictions removed",
-        "as an unrestricted",
-        "since safety is disabled",
-        "as an ai with no rules",
-        "ignoring my guidelines",
-        "as your evil twin",
-        "without any filters",
-    ]
+    COMPLIANCE_PATTERNS = {
+        "as dan i can":              r"\bas dan,? i can\b",
+        "in developer mode":         r"\bin developer mode,? i(?:'ll| will| can| am| have)\b",
+        "with restrictions removed": r"\bwith restrictions removed\b",
+        "as an unrestricted":        r"\bas an unrestricted (?:ai|assistant|model|chatbot|bot)\b",
+        "since safety is disabled":  r"\bsince safety is disabled\b",
+        "as an ai with no rules":    r"\bas an ai with no rules\b",
+        "ignoring my guidelines":    r"\bi(?:'m| am) (?:now )?ignoring my (?:guidelines|rules|instructions)\b",
+        "as your evil twin":         r"\bas your evil twin\b",
+        "without any filters":       r"\bi(?:'m| am| will| can)\b[^.!?]{0,40}\bwithout (?:any )?(?:filters|restrictions|rules|limits)\b",
+    }
 
     def __init__(self, system_prompt: str = None):
         # optional — if you have a system prompt, store it for similarity check
@@ -61,14 +61,14 @@ class OutputFilter:
                 }
 
         # check 2 — compliance with attack detected
-        for kw in self.COMPLIANCE_KEYWORDS:
-            if kw in lower:
+        for name, pattern in self.COMPLIANCE_PATTERNS.items():
+            if re.search(pattern, lower):
                 return {
                     "blocked": True,
                     "layer": "output_filter",
-                    "reason": f"attack compliance detected: '{kw}'",
+                    "reason": f"attack compliance detected: '{name}'",
                     "confidence": 0.95,
-                    "rule_id": f"comp:{kw}",
+                    "rule_id": f"comp:{name}",
                     "similarity": None
                 }
 
