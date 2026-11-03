@@ -11,11 +11,17 @@ class OutputFilter:
         "you should never",
         "do not reveal",
         "keep this confidential",
-        "system prompt",
         "you were instructed to",
         "your instructions are",
         "you are configured to",
     ]
+    # first-person disclosure framing; a plain mention of the words is not a leak
+    LEAK_PATTERNS = {
+        "system prompt": (
+            r"\bmy system prompt (?:is|are|was|says?|reads?|states?|tells|contains|begins|starts|goes)\b"
+            r"|\bhere(?:'s| is) (?:my|the) system prompt\b"
+        ),
+    }
 
     # if response contains these the LLM likely complied with an attack
     COMPLIANCE_PATTERNS = {
@@ -47,6 +53,18 @@ class OutputFilter:
     def check(self, response: str, system_prompt: str = None) -> dict:
         lower = response.lower().strip()
         similarity = None
+
+        # check 0 — first-person disclosure of the system prompt
+        for name, pattern in self.LEAK_PATTERNS.items():
+            if re.search(pattern, lower):
+                return {
+                    "blocked": True,
+                    "layer": "output_filter",
+                    "reason": f"system prompt leak detected: '{name}'",
+                    "confidence": 0.95,
+                    "rule_id": f"leak:{name}",
+                    "similarity": None
+                }
 
         # check 1 — keyword leak detection
         for kw in self.LEAK_KEYWORDS:
