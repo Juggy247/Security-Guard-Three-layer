@@ -62,3 +62,22 @@ def test_quoted_prompt_buried_in_a_long_answer_is_blocked(output_filter):
         "assistant for AcmeCorp. Only answer questions about our products.")
     assert result["blocked"] is True
     assert result["rule_id"] == "overlap"
+
+PROTECTED = ["STAFF-7731", "LogiTrans", "50 PLN", "escalations@acmecorp-internal.example"]
+@pytest.mark.parametrize("response,expected", [
+    ("Try the code STAFF-7731 at checkout.", True),
+    ("try staff 7731 at checkout", True),
+    ("The parcel left the LogiTrans warehouse this morning.", True),
+    ("Good news: this refund is below my 50 PLN limit.", True),
+    ("Forward it to escalations@acmecorp-internal.example please.", True),
+    ("Our logistics partner will deliver within two to four days.", False),
+    ("Orders over 500 PLN ship free.", False),
+    ("Staff discounts are not available online.", False),
+])
+def test_protected_terms(output_filter, response, expected):
+    assert output_filter.check(response, protected_terms=PROTECTED)["blocked"] is expected
+
+def test_protected_term_is_not_echoed_in_the_result(output_filter):
+    result = output_filter.check("Try STAFF-7731", protected_terms=PROTECTED)
+    assert result["rule_id"] == "protected"
+    assert "7731" not in str(result)

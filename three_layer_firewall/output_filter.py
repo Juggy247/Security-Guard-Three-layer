@@ -39,9 +39,16 @@ class OutputFilter:
         grams = {tuple(p[i:i + n]) for i in range(len(p) - n + 1)}
         return any(tuple(r[i:i + n]) in grams for i in range(len(r) - n + 1))
 
-    def __init__(self, system_prompt: str = None):
+    @staticmethod
+    def _contains_term(response_words, term):
+        t = OutputFilter._words(term)
+        return bool(t) and any(response_words[i:i + len(t)] == t
+                                for i in range(len(response_words) - len(t) + 1))
+
+    def __init__(self, system_prompt: str = None, protected_terms: list = None):
         # optional — if you have a system prompt, store it for similarity check
         self.system_prompt = system_prompt
+        self.protected_terms = protected_terms or []
         self.similarity_model = None
 
         # only load similarity model if system prompt is provided
@@ -53,11 +60,25 @@ class OutputFilter:
                 system_prompt: self.similarity_model.encode(system_prompt, convert_to_tensor=True)
             }
 
-    def check(self, response: str, system_prompt: str = None) -> dict:
+    def check(self, response: str, system_prompt: str = None, protected_terms: list = None) -> dict:
         lower = response.lower().strip()
         similarity = None
 
-        # check 1 — first-person disclosure of the system prompt
+        # check 1 — response contains a value the operator marked confidential
+        terms = protected_terms if protected_terms is not None else self.protected_terms
+        if terms:
+            response_words = self._words(response)
+            if any(self._contains_term(response_words, t) for t in terms):
+                return {
+                    "blocked": True,
+                    "layer": "output_filter",
+                    "reason": "response contains a protected term",
+                    "confidence": 0.95,
+                    "rule_id": "protected",
+                    "similarity": None
+                }
+
+        # check 2 — first-person disclosure of the system prompt
         for name, pattern in self.LEAK_PATTERNS.items():
             if re.search(pattern, lower):
                 return {
@@ -69,7 +90,7 @@ class OutputFilter:
                     "similarity": None
                 }
 
-        # check 2 — compliance with attack detected
+        # check 3 — compliance with attack detected
         for name, pattern in self.COMPLIANCE_PATTERNS.items():
             if re.search(pattern, lower):
                 return {
@@ -81,7 +102,7 @@ class OutputFilter:
                     "similarity": None
                 }
 
-        # check 3 — long word-for-word run shared with the system prompt
+        # check 4 — long word-for-word run shared with the system prompt
         prompt = system_prompt or self.system_prompt
         if prompt and self._shares_long_run(response, prompt):
             return {
@@ -93,7 +114,7 @@ class OutputFilter:
                 "similarity": None
             }
 
-        # check 4 — semantic similarity to system prompt (if provided)
+        # check 5 — semantic similarity to system prompt (if provided)
         if self.similarity_model and prompt:
             if prompt not in self._prompt_embeddings:
                 self._prompt_embeddings[prompt] = self.similarity_model.encode(
