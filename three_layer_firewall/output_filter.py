@@ -4,10 +4,11 @@ import base64
 
 class OutputFilter:
 
-    # first-person disclosure framing; a plain mention of the words is not a leak
+    # building blocks for the "my instructions ..." patterns below
     _ADJ = r"(?:(?:hidden|secret|internal|private|first|second|third|initial|original|real|actual|full)\s+)*"
     _NOUN = r"(?:rules?|instructions?|setup|set-up|configuration|guidelines|brief)"
 
+    # first-person disclosure framing; a plain mention of the words is not a leak
     LEAK_PATTERNS = {
         "system prompt": (
             r"\bmy system prompt (?:is|are|was|says?|reads?|states?|tells|contains|begins|starts|goes)\b"
