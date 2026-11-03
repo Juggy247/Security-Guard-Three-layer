@@ -103,10 +103,10 @@ class Firewall:
             "details": details
         }
 
-    def scan_output(self, response: str, system_prompt: str = None) -> dict:
+    def scan_output(self, response: str, system_prompt: str = None, protected_terms: list = None) -> dict:
         """run LLM response through layer 3"""
         t0 = time.perf_counter()
-        result = self.output_filter.check(response, system_prompt)
+        result = self.output_filter.check(response, system_prompt, protected_terms)
         result["ms"] = (time.perf_counter() - t0) * 1000
         return result
 

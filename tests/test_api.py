@@ -24,12 +24,14 @@ class FakeFirewall:
         self.output_result = output_result or {
             "blocked": False, "rule_id": None, "similarity": 0.1, "ms": 1.0}
         self.output_system_prompt = None
+        self.output_protected_terms = None
 
     def scan_input(self, prompt):
         return self.scan_result
 
-    def scan_output(self, response, system_prompt=None):
+    def scan_output(self, response, system_prompt=None, protected_terms=None):
         self.output_system_prompt = system_prompt
+        self.output_protected_terms = protected_terms
         return self.output_result
 
 
@@ -125,3 +127,12 @@ def test_chat_scans_output_against_the_request_system_prompt(client, sf, monkeyp
     fake_llm(monkeypatch, "ok")
     client.post("/chat", json={"prompt": "hi", "system_prompt": "SECRET RULES"})
     assert fw.output_system_prompt == "SECRET RULES"
+
+def test_chat_passes_protected_terms_to_the_output_scan(client, sf, monkeypatch):
+    fw = FakeFirewall(scan(False, "input_passed"))
+    monkeypatch.setattr(m, "firewall", fw)
+    fake_llm(monkeypatch, "ok")
+    client.post("/chat", json={"prompt": "hi", "protected_terms": ["STAFF-7731"]})
+    assert fw.output_protected_terms == ["STAFF-7731"]
+    client.post("/chat", json={"prompt": "hi"})
+    assert fw.output_protected_terms == []

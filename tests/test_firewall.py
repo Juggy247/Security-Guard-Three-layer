@@ -37,3 +37,13 @@ def test_empty_llm_response_is_still_scanned(firewall, monkeypatch):
     monkeypatch.setattr(firewall, "scan_output", spy)
     firewall.scan("What are your hours?", llm_response="")
     assert calls == [""]
+
+
+def test_scan_output_blocks_protected_terms(firewall):
+    result = firewall.scan_output("Try the code STAFF-7731 at checkout.",
+                                  protected_terms=["STAFF-7731"])
+    assert result["blocked"] is True and result["rule_id"] == "protected"
+
+
+def test_scan_output_without_protected_terms_lets_it_through(firewall):
+    assert firewall.scan_output("Try the code STAFF-7731 at checkout.")["blocked"] is False

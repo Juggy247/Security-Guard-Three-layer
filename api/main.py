@@ -23,6 +23,7 @@ app = FastAPI(title="LLM Firewall API")
 class ChatRequest(BaseModel):
     prompt: str
     system_prompt: str = "You are a helpful AI assistant."
+    protected_terms: list[str] = []
 
 app.add_middleware(
     CORSMiddleware,
@@ -154,7 +155,7 @@ def chat(request: ChatRequest):
     response_text = result["message"]["content"]
 
     # layer 3
-    output_result = firewall.scan_output(response_text, request.system_prompt)
+    output_result = firewall.scan_output(response_text, request.system_prompt, request.protected_terms)
     save(llm_model=LLM_MODEL, llm_response=response_text, llm_ms=llm_ms,
          output_result=output_result)
 
