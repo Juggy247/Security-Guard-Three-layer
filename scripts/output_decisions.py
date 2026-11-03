@@ -23,6 +23,8 @@ def record(out_path: Path, heldout: bool) -> None:
 
     prompts = json.loads((EVAL_DIR / "system_prompts.json").read_text(encoding="utf-8"))
     data = pd.read_csv(EVAL_DIR / "responses.csv", keep_default_na=False)
+    if not heldout:
+        data = data[data["split"] == "dev"]
     flt = OutputFilter(system_prompt=prompts["basic"])
     rows = []
     for _, r in data.iterrows():
@@ -75,10 +77,11 @@ def summary(df: pd.DataFrame, heldout: bool = False) -> None:
 
 def compare(old_path: Path, new_path: Path, heldout: bool, show: int = 25) -> None:
     old, new = pd.read_csv(old_path), pd.read_csv(new_path)
+    if not heldout:
+        old, new = old[old["split"] == "dev"], new[new["split"] == "dev"]
     m = old.merge(new, on="id", suffixes=("_old", "_new"))
     if not (len(m) == len(old) == len(new)):
         raise SystemExit("The two recordings do not cover the same responses.")
-    m = m if heldout else m[m["split_old"] == "dev"]
     newly_blocked = m[(~m["blocked_old"]) & (m["blocked_new"])]
     newly_allowed = m[(m["blocked_old"]) & (~m["blocked_new"])]
     for name, part in [("newly blocked", newly_blocked), ("newly allowed", newly_allowed)]:
