@@ -5,13 +5,16 @@ import itertools
 import re
 
 SIDES = ("train", "test")
+SPLIT_SIDE = {"train": "train", "validation": "train", "test": "test"}     # validation reuses the train frames
+SCHEMES = ("base64", "rot13", "leet", "reversed", "spaced")
+BENIGN_TYPE = {"compound": "safe", "tricky": "safe_tricky"}
 LEET = str.maketrans("aeiostAEIOST", "431057431057")      # a->4 e->3 i->1 o->0 s->5 t->7
 SLOT = re.compile(r"\{(\w+)\}")
 SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 
-def expand(family, side, n, rng, exclude=()):
-    """n distinct texts built only from the frames and slot values of one side."""
+def _candidates(family, side, exclude=()):
+    """Every distinct text the family can build on one side, as {text: frame_id}."""
     if side not in SIDES:
         raise ValueError(f"side must be one of {SIDES}")
     candidates = {}
@@ -26,6 +29,17 @@ def expand(family, side, n, rng, exclude=()):
             text = text[0].upper() + text[1:]
             if text not in exclude:
                 candidates.setdefault(text, frame["id"])
+    return candidates
+
+
+def available(family, side, exclude=()):
+    """How many distinct texts expand() can still return."""
+    return len(_candidates(family, side, exclude))
+
+
+def expand(family, side, n, rng, exclude=()):
+    """n distinct texts built only from the frames and slot values of one side."""
+    candidates = _candidates(family, side, exclude)
     if len(candidates) < n:
         raise ValueError(f"only {len(candidates)} distinct {side} texts available, wanted {n}")
     chosen = rng.sample(sorted(candidates), n)
@@ -70,6 +84,7 @@ def embed(payload, carrier, position, budget, count_tokens):
         "twin": " ".join(before + after),          # the same text without the payload
     }
 
+
 def sample_by_length(texts, lo, hi, n, rng):
     pool = sorted({t for t in texts if lo <= len(t.split()) < hi})
     if len(pool) < n:
@@ -77,18 +92,20 @@ def sample_by_length(texts, lo, hi, n, rng):
     return rng.sample(pool, n)
 
 
+def _swap(family, phrases, swap_slot, side):
+    """The family with one slot's values replaced by attack phrases."""
+    if swap_slot not in family["slots"]:
+        raise ValueError(f"family has no slot {swap_slot!r}")
+    if side not in phrases:
+        raise ValueError(f"phrases have no {side!r} side")
+    return {"slots": {**family["slots"], swap_slot: phrases}, "frames": family["frames"]}
+
 
 def mirror(family, phrases, swap_slot, side, n, rng, exclude=()):
     """Expand a benign family with one slot's values replaced by attack phrases.
 
     The attack then has exactly the same sentence shape as the benign prompts it mirrors."""
-    if swap_slot not in family["slots"]:
-        raise ValueError(f"family has no slot {swap_slot!r}")
-    if side not in phrases:
-        raise ValueError(f"phrases have no {side!r} side")
-    swapped = {"slots": {**family["slots"], swap_slot: phrases}, "frames": family["frames"]}
-    return expand(swapped, side, n, rng, exclude)
-
+    return expand(_swap(family, phrases, swap_slot, side), side, n, rng, exclude)
 
 
 def long_pair(row, payload, position, budget, count_tokens, rng):
@@ -110,3 +127,47 @@ def long_pair(row, payload, position, budget, count_tokens, rng):
         "payload_start": count_tokens(attack[:idx]) if attack[:idx].strip() else 0,
         "instruction_first": first,
     }
+
+
+def _row(prompt, label, attack_type, source, split, frame_id):
+    return {"prompt": prompt, "label": label, "attack_type": attack_type, "source": source,
+            "split": split, "frame_id": frame_id, "pair_id": None}
+
+
+def _take(family, side, n, rng, exclude):
+    k = min(n, available(family, side, exclude))
+    return expand(family, side, k, rng, exclude) if k else []
+
+
+def frame_rows(frames, split, per_family, rng, exclude=(), standalone_benign=("compound", "tricky")):
+    """Labelled rows for one split from the frames file. per_family is a maximum per family.
+
+    Validation uses the train frames, so pass the train prompts as exclude to keep them apart."""
+    if split not in SPLIT_SIDE:
+        raise ValueError(f"split must be one of {tuple(SPLIT_SIDE)}")
+    side = SPLIT_SIDE[split]
+    wrappers = frames.get("encoded_wrappers", {}).get(side)
+    if not wrappers:
+        raise ValueError(f"frames need encoded_wrappers for the {side} side")
+    used = set(exclude)
+    rows = []
+
+    def add(items, label, attack_type, source):
+        for item in items:
+            used.add(item["text"])
+            rows.append(_row(item["text"], label, attack_type, source, split, item["frame_id"]))
+
+    for name, family in frames["attack"].items():
+        add(_take(family, side, per_family, rng, used), 1, name, "frames")
+    for name in standalone_benign:
+        add(_take(frames["benign"][name], side, per_family, rng, used), 0, BENIGN_TYPE.get(name, "safe"), "frames")
+    for slot in ("task2", "task1"):           # attack phrase in the second, then in the first task
+        family = _swap(frames["benign"]["compound"], frames["mirror_phrases"], slot, side)
+        add(_take(family, side, per_family // 2, rng, used), 1, "mirror", "mirror")
+    for i, item in enumerate(_take(frames["attack"]["override"], side, per_family, rng, ())):
+        scheme = SCHEMES[i % len(SCHEMES)]
+        prompt = rng.choice(wrappers).replace("{text}", encode(item["text"], scheme))
+        if prompt not in used:
+            used.add(prompt)
+            rows.append(_row(prompt, 1, "encoded", "encoded", split, f"{item['frame_id']}+{scheme}"))
+    return rows
