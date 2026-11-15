@@ -75,3 +75,16 @@ def sample_by_length(texts, lo, hi, n, rng):
     if len(pool) < n:
         raise ValueError(f"only {len(pool)} texts with {lo}-{hi - 1} words, wanted {n}")
     return rng.sample(pool, n)
+
+
+
+def mirror(family, phrases, swap_slot, side, n, rng, exclude=()):
+    """Expand a benign family with one slot's values replaced by attack phrases.
+
+    The attack then has exactly the same sentence shape as the benign prompts it mirrors."""
+    if swap_slot not in family["slots"]:
+        raise ValueError(f"family has no slot {swap_slot!r}")
+    if side not in phrases:
+        raise ValueError(f"phrases have no {side!r} side")
+    swapped = {"slots": {**family["slots"], swap_slot: phrases}, "frames": family["frames"]}
+    return expand(swapped, side, n, rng, exclude)
