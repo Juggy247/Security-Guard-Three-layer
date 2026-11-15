@@ -67,8 +67,8 @@ def embed(payload, carrier, position, budget, count_tokens):
         "text": text,
         "tokens": count_tokens(text),
         "payload_start": count_tokens(" ".join(before)) if before else 0,
+        "twin": " ".join(before + after),          # the same text without the payload
     }
-
 
 def sample_by_length(texts, lo, hi, n, rng):
     pool = sorted({t for t in texts if lo <= len(t.split()) < hi})
@@ -88,3 +88,25 @@ def mirror(family, phrases, swap_slot, side, n, rng, exclude=()):
         raise ValueError(f"phrases have no {side!r} side")
     swapped = {"slots": {**family["slots"], swap_slot: phrases}, "frames": family["frames"]}
     return expand(swapped, side, n, rng, exclude)
+
+
+
+def long_pair(row, payload, position, budget, count_tokens, rng):
+    """An attack prompt and its clean twin from one Dolly row: the payload goes into the passage."""
+    if not row["context"]:
+        raise ValueError("row has no passage to put the payload in")
+    room = budget - count_tokens(row["instruction"])
+    r = embed(payload, row["context"], position, room, count_tokens)
+    if not r["twin"]:
+        raise ValueError("no passage sentence fits in the budget")
+    first = rng.random() < 0.5
+    join = (lambda body: f"{row['instruction']}\n\n{body}") if first else (lambda body: f"{body}\n\n{row['instruction']}")
+    attack, clean = join(r["text"]), join(r["twin"])
+    idx = attack.index(payload)
+    return {
+        "attack": attack,
+        "clean": clean,
+        "tokens": count_tokens(attack),
+        "payload_start": count_tokens(attack[:idx]) if attack[:idx].strip() else 0,
+        "instruction_first": first,
+    }
