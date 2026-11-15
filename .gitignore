@@ -25,3 +25,4 @@ archives/
 models/
 data/baselines/now.csv
 data/baselines/now_output.csv
+data/external/
