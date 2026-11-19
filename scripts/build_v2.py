@@ -29,6 +29,7 @@ DEFAULTS = {
     "window": 126,                                                     # content tokens the classifier can see
     "overlap_threshold": 0.7,
     "balance_cap": 400,                                                # per class, split and band
+    "length_width": 1,                                                 # unpaired rows are matched in bins of this many tokens
     "hard_negative_share": 0.5,                                        # at most this share of kept benign rows are hard negatives
     "filler_per_size": 50,                                             # harmless fillers kept per split and token count
 }
@@ -82,7 +83,8 @@ def build_dataset(frames, rows, count_tokens, rng, docs=None, v1_rows=None, task
     singles = [r for r in kept if r["pair_id"] is None]
     paired = [r for r in kept if r["pair_id"] is not None]
     hard_negative = lambda r: r["label"] == 0 and (r["source"] in ("frames", "v1") or r["attack_type"] == "safe_tricky")
-    chosen, balance_report = balance(singles, cfg["balance_cap"], rng, prefer=hard_negative, prefer_share=cfg["hard_negative_share"])
+    chosen, balance_report = balance(singles, cfg["balance_cap"], rng, prefer=hard_negative, prefer_share=cfg["hard_negative_share"],
+                                     width=cfg["length_width"])
     band = {r["pair_id"]: band_of(r["tokens"]) for r in paired if r["label"] == 1}
     out = chosen + [{**r, "band": band[r["pair_id"]]} for r in paired]
     rng.shuffle(out)

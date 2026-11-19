@@ -1,4 +1,5 @@
 import random
+from collections import Counter
 
 import pytest
 
@@ -229,3 +230,16 @@ def test_the_report_has_a_length_audit_for_every_split_and_band():
     assert set(report["length_auc"]) == {f"{r['split']}|{r['band']}" for r in out}
     for key, cell in report["length_auc"].items():
         assert cell["attack"] == cell["benign"] and cell["attack"] >= cell["unpaired"]["attack"]
+
+
+def test_unpaired_attacks_and_benign_rows_have_the_same_lengths_in_every_split():
+    out, _ = build()
+    for split in ("train", "validation", "test"):
+        single = [r for r in out if r["split"] == split and not r["pair_id"]]
+        assert single
+        assert Counter(r["tokens"] for r in single if r["label"] == 1) == Counter(r["tokens"] for r in single if r["label"] == 0)
+
+
+def test_the_length_audit_finds_nothing_to_exploit_among_unpaired_rows():
+    _, report = build()
+    assert {cell["unpaired"]["auc"] for cell in report["length_auc"].values()} <= {None, 0.5}
