@@ -2,7 +2,6 @@
 import random
 from collections import defaultdict
 
-from scripts.dataset_v2 import SPLIT_SIDE, long_pair
 from scripts.public_pools import is_tricky, to_prompt
 from scripts.dataset_v2 import SIDES, SPLIT_SIDE, available, expand, long_pair
 
