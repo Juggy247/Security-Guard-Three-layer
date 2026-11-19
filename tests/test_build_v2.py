@@ -51,8 +51,8 @@ def words(s):
     return len(s.split())
 
 
-def sentence(r):
-    return " ".join(r.choice(VOCAB) for _ in range(9)) + "."
+def sentence(r, n=9):
+    return " ".join(r.choice(VOCAB) for _ in range(n)).capitalize() + "."
 
 
 def make_rows():
@@ -64,6 +64,9 @@ def make_rows():
     for i in range(120):                                                      # passages with an instruction
         rows.append({"id": f"dolly-{i}", "instruction": "Summarize this passage briefly.",
                      "context": " ".join(sentence(r) for _ in range(20)), "category": "summarization"})
+    for i in range(60):                                                       # plain sentences of many lengths: filler material
+        rows.append({"id": f"dolly-{1000 + i}", "instruction": "Describe this text.",
+                     "context": " ".join(sentence(r, n) for n in range(3, 30)), "category": "summarization"})
     return rows
 
 
