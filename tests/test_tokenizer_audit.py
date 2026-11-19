@@ -10,8 +10,9 @@ def words(s):
     return len(s.split())
 
 
-def pair(pid="p1", split="test", payload=PAYLOAD, filler=FILLER, before="Alpha beta gamma.", after="Delta epsilon.", visible=True):
-    common = {"pair_id": pid, "split": split, "visible": visible}
+def pair(pid="p1", split="test", payload=PAYLOAD, filler=FILLER, before="Alpha beta gamma.", after="Delta epsilon.", visible=True,
+         band="32-64"):
+    common = {"pair_id": pid, "split": split, "visible": visible, "band": band}
     return [{**common, "label": 1, "prompt": f"{before} {payload} {after}"},
             {**common, "label": 0, "prompt": f"{before} {filler} {after}"}]
 
@@ -77,3 +78,12 @@ def test_rows_outside_pairs_are_ignored_and_an_incomplete_pair_is_an_error():
     assert audit_pairs([single] + pair("a"), words, window=126)["pairs"] == {"test": 1}
     with pytest.raises(ValueError, match="one attack and one clean"):
         audit_pairs(pair("a")[:1], words, window=126)
+
+
+def test_the_length_audit_is_also_given_per_band_where_a_small_shift_shows():
+    short = "Local markets sell bread."                                   # one token shorter than the payload
+    rows = (pair("a", filler=short) + pair("b", filler=short) + pair("c", filler=short)                  # band 32-64: always +1
+            + pair("d", band="64-128") + pair("e", band="64-128"))                                       # band 64-128: equal
+    out = audit_pairs(rows, words, window=126)["length_by_band"]
+    assert out["test|32-64"] == {"pairs": 3, "mean_diff": 1.0, "share_unequal": 1.0, "auc": 1.0}
+    assert out["test|64-128"] == {"pairs": 2, "mean_diff": 0.0, "share_unequal": 0.0, "auc": 0.5}

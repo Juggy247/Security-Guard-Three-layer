@@ -32,21 +32,30 @@ def payload_span(attack, clean):
     return found[head].start(), found[len(a) - tail - 1].end()
 
 
+def _summary(attack, clean):
+    diffs = [a - c for a, c in zip(attack, clean)]
+    return {"pairs": len(diffs), "mean_diff": round(sum(diffs) / len(diffs), 3),
+            "share_unequal": round(sum(d != 0 for d in diffs) / len(diffs), 3), "auc": _auc(attack, clean)}
+
+
 def audit_pairs(rows, count_tokens, window):
-    """Per split: how the token counts of attack and clean twins differ, and which payloads end inside `window`."""
+    """Per split and per split|band: how the token counts of attack and clean twins differ, and which payloads
+    end inside `window`. The per-band figures are the ones that can show a small shift; a whole split cannot."""
     members = defaultdict(dict)
     for r in rows:
         if r["pair_id"]:
             members[r["pair_id"]][r["label"]] = r
-    counts = defaultdict(lambda: {"attack": [], "clean": []})
+    counts = defaultdict(lambda: ([], []))
     seen = defaultdict(lambda: {"pairs": 0, "hidden": 0, "dataset_hidden": 0, "disagree": 0})
     for pid, m in sorted(members.items()):
         if set(m) != {0, 1}:
             raise ValueError(f"pair {pid} needs one attack and one clean row")
         attack, clean = m[1], m[0]
         split = attack["split"]
-        counts[split]["attack"].append(count_tokens(attack["prompt"]))
-        counts[split]["clean"].append(count_tokens(clean["prompt"]))
+        n_attack, n_clean = count_tokens(attack["prompt"]), count_tokens(clean["prompt"])
+        for key in (split, f"{split}|{attack['band']}"):
+            counts[key][0].append(n_attack)
+            counts[key][1].append(n_clean)
         _, end = payload_span(attack["prompt"], clean["prompt"])
         visible = count_tokens(attack["prompt"][:end]) <= window
         cell = seen[split]
@@ -54,13 +63,11 @@ def audit_pairs(rows, count_tokens, window):
         cell["hidden"] += not visible
         cell["dataset_hidden"] += attack["visible"] is False
         cell["disagree"] += attack["visible"] != visible
-    length = {}
-    for split, c in counts.items():
-        diffs = [a - k for a, k in zip(c["attack"], c["clean"])]
-        length[split] = {"mean_diff": round(sum(diffs) / len(diffs), 3),
-                         "share_unequal": round(sum(d != 0 for d in diffs) / len(diffs), 3),
-                         "auc": _auc(c["attack"], c["clean"])}
-    return {"pairs": {s: v["pairs"] for s, v in seen.items()}, "length": length, "visibility": dict(seen)}
+    length = {k: _summary(*v) for k, v in sorted(counts.items()) if "|" not in k}
+    for cell in length.values():
+        del cell["pairs"]
+    return {"pairs": {s: v["pairs"] for s, v in seen.items()}, "length": length,
+            "length_by_band": {k: _summary(*v) for k, v in sorted(counts.items()) if "|" in k}, "visibility": dict(seen)}
 
 
 def load_pairs(folder):
@@ -70,7 +77,7 @@ def load_pairs(folder):
         with open(Path(folder) / f"dataset_v2_{split}.csv", newline="") as f:
             for r in csv.DictReader(f):
                 if r["pair_id"]:
-                    rows.append({"pair_id": r["pair_id"], "split": split, "label": int(r["label"]), "prompt": r["prompt"],
+                    rows.append({"pair_id": r["pair_id"], "split": split, "label": int(r["label"]), "prompt": r["prompt"], "band": r["band"],
                                  "visible": {"True": True, "False": False}.get(r["visible"])})
     return rows
 
@@ -93,7 +100,10 @@ def main():
         print(f"\n{name}  (content window {window}, {'cased' if r['cased'] else 'uncased'})")
         for split in SPLITS:
             L, V = r["length"][split], r["visibility"][split]
+            bands = {k: c for k, c in r["length_by_band"].items() if k.startswith(split + "|") and c["pairs"] >= 20}
+            worst = max(bands.items(), key=lambda kv: kv[1]["auc"], default=(None, {"auc": None, "pairs": 0}))
             print(f"  {split:<11} pairs {V['pairs']:>4}  attack-clean tokens: mean {L['mean_diff']:>6}  unequal {L['share_unequal']:.2f}  length AUC {L['auc']}"
+                  f"  | worst band {str(worst[0]).split('|')[-1]:<8} AUC {worst[1]['auc']} (n {worst[1]['pairs']})"
                   f"  | hidden {V['hidden']:>3} (dataset flag {V['dataset_hidden']:>3}, disagree {V['disagree']:>3})")
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(report, indent=2, sort_keys=True))
