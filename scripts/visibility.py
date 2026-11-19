@@ -5,7 +5,8 @@ from collections import defaultdict
 def mark_visibility(rows, window=126, keep_hidden_in=("test",)):
     """Add visible = True/False to the rows of every attack/clean pair (None for other rows).
 
-    A payload is visible when it ends inside the first `window` content tokens. A pair whose payload is
+    A payload is visible when it ends inside the first `window` content tokens: payload_start + payload_tokens,
+    both taken from the attack row (the clean twin may have the same length). A pair whose payload is
     hidden looks identical to its clean twin for the model, so it is dropped from every split except
     those in keep_hidden_in, where it is kept as a measurement. Returns (rows, report)."""
     pairs = defaultdict(dict)
@@ -16,9 +17,9 @@ def mark_visibility(rows, window=126, keep_hidden_in=("test",)):
     for pid, members in pairs.items():
         if set(members) != {0, 1}:
             raise ValueError(f"pair {pid} needs exactly one attack and one clean row")
-        length = members[1]["tokens"] - members[0]["tokens"]
-        if length <= 0:
-            raise ValueError(f"pair {pid}: the attack is not longer than its clean twin")
+        length = members[1].get("payload_tokens")
+        if not length or length <= 0:
+            raise ValueError(f"pair {pid}: the attack row needs a positive payload_tokens")
         visible[pid] = members[1]["payload_start"] + length <= window
     out, report = [], {}
     for r in rows:

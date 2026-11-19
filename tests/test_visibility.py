@@ -5,8 +5,8 @@ from scripts.visibility import mark_visibility
 
 def pair(pid, split="train", start=50, payload=10, total=200):
     common = {"split": split, "pair_id": pid, "frame_id": "doc-" + pid, "source": "dolly"}
-    return [{**common, "prompt": "attack " + pid, "label": 1, "tokens": total, "payload_start": start},
-            {**common, "prompt": "clean " + pid, "label": 0, "tokens": total - payload, "payload_start": None}]
+    return [{**common, "prompt": "attack " + pid, "label": 1, "tokens": total, "payload_start": start, "payload_tokens": payload},
+            {**common, "prompt": "clean " + pid, "label": 0, "tokens": total, "payload_start": None, "payload_tokens": None}]
 
 
 def single(label=0, split="train"):
@@ -65,8 +65,24 @@ def test_report_counts_pairs_hidden_and_dropped_per_split():
     assert report == {"train": {"pairs": 2, "hidden": 1, "dropped": 1}, "test": {"pairs": 1, "hidden": 1, "dropped": 0}}
 
 
-def test_an_incomplete_pair_or_a_payload_of_no_length_is_an_error():
+def test_an_incomplete_pair_is_an_error():
     with pytest.raises(ValueError, match="a"):
         mark_visibility(pair("a")[:1])
-    with pytest.raises(ValueError, match="a"):
+
+
+def test_a_payload_of_no_length_is_an_error():
+    with pytest.raises(ValueError, match="payload_tokens"):
         mark_visibility(pair("a", payload=0))
+
+
+def test_an_attack_row_without_payload_tokens_is_an_error():
+    rows = pair("a")
+    del rows[0]["payload_tokens"]
+    with pytest.raises(ValueError, match="payload_tokens"):
+        mark_visibility(rows)
+
+
+def test_the_payload_length_does_not_depend_on_the_clean_twins_length():
+    rows = pair("a", split="test", start=120, payload=3)
+    rows[1]["tokens"] = 7                                                   # a clean twin of any length
+    assert flags(rows) == {"a": True}                                       # ends at 123, inside the window
