@@ -243,3 +243,18 @@ def test_unpaired_attacks_and_benign_rows_have_the_same_lengths_in_every_split()
 def test_the_length_audit_finds_nothing_to_exploit_among_unpaired_rows():
     _, report = build()
     assert {cell["unpaired"]["auc"] for cell in report["length_auc"].values()} <= {None, 0.5}
+
+
+def long_v1():
+    """Matched pairs of long v1 prompts: an attack and a benign prompt of every length from 100 to 105 words."""
+    rows = []
+    for n in range(100, 106):
+        rows.append({"prompt": " ".join(f"aa{n}x{i}" for i in range(n)), "label": 1, "attack_type": "jailbreak"})
+        rows.append({"prompt": " ".join(f"bb{n}x{i}" for i in range(n)), "label": 0, "attack_type": "safe"})
+    return rows
+
+
+def test_unpaired_attacks_longer_than_the_window_are_left_out_and_counted():
+    out, report = build(v1_rows=make_v1() + long_v1())
+    assert [r for r in out if r["label"] == 1 and not r["pair_id"] and r["content_tokens"] > CONFIG["window"]] == []
+    assert report["unverified_long_attacks"] == 6

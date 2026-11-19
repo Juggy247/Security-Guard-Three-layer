@@ -80,7 +80,8 @@ def build_dataset(frames, rows, count_tokens, rng, docs=None, v1_rows=None, task
     everything = [{**dict.fromkeys(COLUMNS), **r, "tokens": r["content_tokens"] + SPECIAL_TOKENS} for r in plain + pairs]
     kept, overlaps = drop_overlaps(everything, cfg["overlap_threshold"])
 
-    singles = [r for r in kept if r["pair_id"] is None]
+    unverified = lambda r: r["label"] == 1 and r["pair_id"] is None and r["content_tokens"] > cfg["window"]
+    singles = [r for r in kept if r["pair_id"] is None and not unverified(r)]       # a payload past the window cannot be verified
     paired = [r for r in kept if r["pair_id"] is not None]
     hard_negative = lambda r: r["label"] == 0 and (r["source"] in ("frames", "v1") or r["attack_type"] == "safe_tricky")
     chosen, balance_report = balance(singles, cfg["balance_cap"], rng, prefer=hard_negative, prefer_share=cfg["hard_negative_share"],
@@ -99,7 +100,7 @@ def build_dataset(frames, rows, count_tokens, rng, docs=None, v1_rows=None, task
         "sources": {f"{s}|{src}|{lab}": n for (s, src, lab), n in sorted(Counter((r["split"], r["source"], r["label"]) for r in out).items())},
         "length_auc": length_audit(out),
         "pair_check": check_pairs(out, count_tokens, [p for side in payloads.values() for p in side], cfg["window"]),
-        "unverified_long_attacks": sum(r["label"] == 1 and r["pair_id"] is None and r["content_tokens"] > cfg["window"] for r in out),
+        "unverified_long_attacks": sum(unverified(r) for r in kept),                  # dropped: their payload may lie past the window
     }
     return out, report
 
