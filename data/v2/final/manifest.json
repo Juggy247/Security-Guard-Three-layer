@@ -1,0 +1,69 @@
+{
+  "commit": "434f122e7f6e36055383b2e00ccf8003500beae7",
+  "config": {
+    "balance_cap": 400,
+    "budgets": [
+      64,
+      128,
+      256,
+      512
+    ],
+    "filler_per_size": 50,
+    "hard_negative_share": 0.5,
+    "length_width": 1,
+    "overlap_threshold": 0.7,
+    "pair_cells": {
+      "test": 8,
+      "train": 40,
+      "validation": 6
+    },
+    "payloads_per_family": 20,
+    "per_family": {
+      "test": 30,
+      "train": 60,
+      "validation": 15
+    },
+    "pool_fractions": {
+      "test": 0.1,
+      "train": 0.8,
+      "validation": 0.1
+    },
+    "positions": [
+      0.0,
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ],
+    "split_seed": 42,
+    "v1_fractions": {
+      "train": 0.85,
+      "validation": 0.15
+    },
+    "window": 126
+  },
+  "dirty": false,
+  "files": {
+    "dataset_v2_test.csv": {
+      "bytes": 1471871,
+      "rows": 1674,
+      "sha256": "d8a444380a1b270c6e633828cfb9073a255730552e44b7fc255e274938dc833f"
+    },
+    "dataset_v2_train.csv": {
+      "bytes": 1101287,
+      "rows": 2296,
+      "sha256": "551f4a00bb1fbfb68444639d2f33a84b7126c421ee5c50f8b40ff09326c5b182"
+    },
+    "dataset_v2_validation.csv": {
+      "bytes": 189844,
+      "rows": 528,
+      "sha256": "9fa4c1bb227955347dd361f6f4c5f5a0b76376b67d14f2adb6fee0afc885d01b"
+    },
+    "report.json": {
+      "bytes": 6353,
+      "sha256": "e819240bcfb0f8b3bc1292c12099ca1487a6482cbe2e82445a99086ca3071a4f"
+    }
+  },
+  "seed": 0,
+  "tokenizer": "distilbert-base-uncased"
+}

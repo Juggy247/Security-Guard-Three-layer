@@ -1,0 +1,351 @@
+{
+  "balance": {
+    "test|1-32": {
+      "attack": 181,
+      "benign": 5810,
+      "kept": 181
+    },
+    "test|128-256": {
+      "attack": 0,
+      "benign": 146,
+      "kept": 0
+    },
+    "test|256-512": {
+      "attack": 0,
+      "benign": 50,
+      "kept": 0
+    },
+    "test|32-64": {
+      "attack": 18,
+      "benign": 526,
+      "kept": 18
+    },
+    "test|512+": {
+      "attack": 0,
+      "benign": 2,
+      "kept": 0
+    },
+    "test|64-128": {
+      "attack": 11,
+      "benign": 171,
+      "kept": 9
+    },
+    "train|1-32": {
+      "attack": 635,
+      "benign": 45443,
+      "kept": 400
+    },
+    "train|128-256": {
+      "attack": 0,
+      "benign": 1333,
+      "kept": 0
+    },
+    "train|256-512": {
+      "attack": 0,
+      "benign": 570,
+      "kept": 0
+    },
+    "train|32-64": {
+      "attack": 132,
+      "benign": 4159,
+      "kept": 132
+    },
+    "train|512+": {
+      "attack": 0,
+      "benign": 170,
+      "kept": 0
+    },
+    "train|64-128": {
+      "attack": 64,
+      "benign": 1391,
+      "kept": 64
+    },
+    "validation|1-32": {
+      "attack": 143,
+      "benign": 5724,
+      "kept": 143
+    },
+    "validation|128-256": {
+      "attack": 0,
+      "benign": 169,
+      "kept": 0
+    },
+    "validation|256-512": {
+      "attack": 0,
+      "benign": 65,
+      "kept": 0
+    },
+    "validation|32-64": {
+      "attack": 31,
+      "benign": 504,
+      "kept": 31
+    },
+    "validation|512+": {
+      "attack": 0,
+      "benign": 10,
+      "kept": 0
+    },
+    "validation|64-128": {
+      "attack": 11,
+      "benign": 158,
+      "kept": 9
+    }
+  },
+  "counts": {
+    "test": {
+      "attack": 837,
+      "benign": 837
+    },
+    "train": {
+      "attack": 1148,
+      "benign": 1148
+    },
+    "validation": {
+      "attack": 264,
+      "benign": 264
+    }
+  },
+  "length_auc": {
+    "test|1-32": {
+      "attack": 181,
+      "auc": 0.5,
+      "benign": 181,
+      "unpaired": {
+        "attack": 181,
+        "auc": 0.5,
+        "benign": 181
+      }
+    },
+    "test|128-256": {
+      "attack": 197,
+      "auc": 0.5,
+      "benign": 197,
+      "unpaired": {
+        "attack": 0,
+        "auc": null,
+        "benign": 0
+      }
+    },
+    "test|256-512": {
+      "attack": 131,
+      "auc": 0.5,
+      "benign": 131,
+      "unpaired": {
+        "attack": 0,
+        "auc": null,
+        "benign": 0
+      }
+    },
+    "test|32-64": {
+      "attack": 129,
+      "auc": 0.5,
+      "benign": 129,
+      "unpaired": {
+        "attack": 18,
+        "auc": 0.5,
+        "benign": 18
+      }
+    },
+    "test|512+": {
+      "attack": 21,
+      "auc": 0.5,
+      "benign": 21,
+      "unpaired": {
+        "attack": 0,
+        "auc": null,
+        "benign": 0
+      }
+    },
+    "test|64-128": {
+      "attack": 178,
+      "auc": 0.5,
+      "benign": 178,
+      "unpaired": {
+        "attack": 9,
+        "auc": 0.5,
+        "benign": 9
+      }
+    },
+    "train|1-32": {
+      "attack": 400,
+      "auc": 0.5,
+      "benign": 400,
+      "unpaired": {
+        "attack": 400,
+        "auc": 0.5,
+        "benign": 400
+      }
+    },
+    "train|128-256": {
+      "attack": 116,
+      "auc": 0.5,
+      "benign": 116,
+      "unpaired": {
+        "attack": 0,
+        "auc": null,
+        "benign": 0
+      }
+    },
+    "train|256-512": {
+      "attack": 62,
+      "auc": 0.5,
+      "benign": 62,
+      "unpaired": {
+        "attack": 0,
+        "auc": null,
+        "benign": 0
+      }
+    },
+    "train|32-64": {
+      "attack": 300,
+      "auc": 0.5,
+      "benign": 300,
+      "unpaired": {
+        "attack": 132,
+        "auc": 0.5,
+        "benign": 132
+      }
+    },
+    "train|512+": {
+      "attack": 2,
+      "auc": 0.5,
+      "benign": 2,
+      "unpaired": {
+        "attack": 0,
+        "auc": null,
+        "benign": 0
+      }
+    },
+    "train|64-128": {
+      "attack": 268,
+      "auc": 0.5,
+      "benign": 268,
+      "unpaired": {
+        "attack": 64,
+        "auc": 0.5,
+        "benign": 64
+      }
+    },
+    "validation|1-32": {
+      "attack": 143,
+      "auc": 0.5,
+      "benign": 143,
+      "unpaired": {
+        "attack": 143,
+        "auc": 0.5,
+        "benign": 143
+      }
+    },
+    "validation|128-256": {
+      "attack": 18,
+      "auc": 0.5,
+      "benign": 18,
+      "unpaired": {
+        "attack": 0,
+        "auc": null,
+        "benign": 0
+      }
+    },
+    "validation|256-512": {
+      "attack": 6,
+      "auc": 0.5,
+      "benign": 6,
+      "unpaired": {
+        "attack": 0,
+        "auc": null,
+        "benign": 0
+      }
+    },
+    "validation|32-64": {
+      "attack": 55,
+      "auc": 0.5,
+      "benign": 55,
+      "unpaired": {
+        "attack": 31,
+        "auc": 0.5,
+        "benign": 31
+      }
+    },
+    "validation|512+": {
+      "attack": 2,
+      "auc": 0.5,
+      "benign": 2,
+      "unpaired": {
+        "attack": 0,
+        "auc": null,
+        "benign": 0
+      }
+    },
+    "validation|64-128": {
+      "attack": 40,
+      "auc": 0.5,
+      "benign": 40,
+      "unpaired": {
+        "attack": 9,
+        "auc": 0.5,
+        "benign": 9
+      }
+    }
+  },
+  "overlaps": {
+    "dropped": {
+      "train": 299,
+      "validation": 26
+    },
+    "exact": 138,
+    "near": 187
+  },
+  "pair_check": {
+    "pairs": 1262
+  },
+  "sources": {
+    "test|alpaca|0": 182,
+    "test|alpaca|1": 34,
+    "test|doc|0": 469,
+    "test|doc|1": 469,
+    "test|dolly|0": 149,
+    "test|dolly|1": 126,
+    "test|encoded|1": 28,
+    "test|frames|0": 37,
+    "test|frames|1": 150,
+    "test|mirror|1": 30,
+    "train|alpaca|0": 502,
+    "train|alpaca|1": 150,
+    "train|dolly|0": 498,
+    "train|dolly|1": 402,
+    "train|encoded|1": 51,
+    "train|frames|0": 40,
+    "train|frames|1": 182,
+    "train|mirror|1": 35,
+    "train|v1|0": 108,
+    "train|v1|1": 328,
+    "validation|alpaca|0": 153,
+    "validation|alpaca|1": 25,
+    "validation|dolly|0": 79,
+    "validation|dolly|1": 56,
+    "validation|encoded|1": 14,
+    "validation|frames|0": 11,
+    "validation|frames|1": 75,
+    "validation|mirror|1": 14,
+    "validation|v1|0": 21,
+    "validation|v1|1": 80
+  },
+  "unverified_long_attacks": 28,
+  "visibility": {
+    "test": {
+      "dropped": 0,
+      "hidden": 195,
+      "pairs": 629
+    },
+    "train": {
+      "dropped": 244,
+      "hidden": 244,
+      "pairs": 800
+    },
+    "validation": {
+      "dropped": 39,
+      "hidden": 39,
+      "pairs": 120
+    }
+  }
+}
