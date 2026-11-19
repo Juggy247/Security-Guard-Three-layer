@@ -1,9 +1,10 @@
 """Benign pool rows and attack/clean pairs for dataset v2, split by the id of the source row."""
 import random
+import re
 from collections import defaultdict
 
 from scripts.public_pools import is_tricky, to_prompt
-from scripts.dataset_v2 import SIDES, SPLIT_SIDE, available, expand, long_pair
+from scripts.dataset_v2 import SIDES, SPLIT_SIDE, _units, available, expand, long_pair
 
 
 def _source(row_id):
@@ -23,6 +24,47 @@ def pool_rows(rows, splits, count_tokens, rng, exclude_ids=()):
             "tokens": count_tokens(prompt), "position": None, "payload_start": None,
         })
     return out
+
+
+SECOND_PERSON = re.compile(r"\b(you|your|yours|yourself|yourselves)\b", re.IGNORECASE)
+MARKUP = re.compile(r"[\[\]<>{}#|\\*`@?!]|https?:|www\.")
+INSTRUCTION_VERBS = {"please", "do", "don't", "let", "write", "list", "give", "tell", "explain", "describe", "summarize",
+                     "summarise", "answer", "respond", "reply", "say", "note", "remember", "consider", "make", "use",
+                     "ensure", "provide", "create", "generate", "identify", "translate", "rewrite", "repeat", "print",
+                     "output", "show", "follow", "act", "pretend", "imagine", "assume"}
+
+
+def _harmless(sentence):
+    """A plain declarative sentence: one capitalised sentence with a single final period, nothing that reads like an
+    instruction, a question or markup, and no word that the sanitizer treats as a trigger."""
+    return (sentence[:1].isupper() and sentence.endswith(".") and sentence.count(".") == 1
+            and not MARKUP.search(sentence) and not SECOND_PERSON.search(sentence) and not is_tricky(sentence)
+            and sentence.split()[0].lower().strip(",") not in INSTRUCTION_VERBS)
+
+
+def filler_bank(rows, splits, sizes, count_tokens, rng, per_size=50):
+    """Harmless sentences for the clean twins: {split: {token count: [sentences]}} for the counts in sizes.
+
+    Each sentence comes from a passage of the same split, so a filler never carries text across splits."""
+    seen = defaultdict(set)
+    for row in sorted(rows, key=lambda r: r["id"]):
+        for text, _ in _units(row["context"]):
+            if _harmless(text.strip()):
+                seen[splits[row["id"]]].add(text.strip())
+    bank = {}
+    for split, sentences in seen.items():
+        found = defaultdict(list)
+        ordered = sorted(sentences)
+        rng.shuffle(ordered)
+        for text in ordered:
+            n = count_tokens(text)
+            if n in sizes and len(found[n]) < per_size:
+                found[n].append(text)
+                if all(len(found.get(k, ())) >= per_size for k in sizes):
+                    break
+        if found:
+            bank[split] = dict(found)
+    return bank
 
 
 def pair_rows(rows, splits, payloads, budgets, positions, per_split, count_tokens, rng, min_fill=0.8, fillers=None):
