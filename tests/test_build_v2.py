@@ -217,3 +217,8 @@ def test_documents_without_any_test_filler_are_an_error():
     alpaca_only = [r for r in make_rows() if r["id"].startswith("alpaca")]
     with pytest.raises(ValueError, match="filler"):
         build(rows=alpaca_only)
+
+
+def test_the_report_says_how_many_pairs_passed_the_pair_check():
+    out, report = build()
+    assert report["pair_check"] == {"pairs": sum(r["label"] == 1 and bool(r["pair_id"]) for r in out)}

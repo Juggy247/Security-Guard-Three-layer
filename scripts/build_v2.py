@@ -7,6 +7,7 @@ from pathlib import Path
 from scripts.balance import balance, band_of
 from scripts.dataset_v2 import frame_rows
 from scripts.integrity import assign_splits, drop_overlaps
+from scripts.pair_check import check_pairs
 from scripts.sources import document_pairs, filler_bank, pair_rows, payload_bank, pool_rows
 from scripts.visibility import mark_visibility
 
@@ -93,6 +94,7 @@ def build_dataset(frames, rows, count_tokens, rng, docs=None, v1_rows=None, task
         "overlaps": overlaps,
         "counts": counts,
         "sources": {f"{s}|{src}|{lab}": n for (s, src, lab), n in sorted(Counter((r["split"], r["source"], r["label"]) for r in out).items())},
+        "pair_check": check_pairs(out, count_tokens, [p for side in payloads.values() for p in side], cfg["window"]),
         "unverified_long_attacks": sum(r["label"] == 1 and r["pair_id"] is None and r["content_tokens"] > cfg["window"] for r in out),
     }
     return out, report
