@@ -55,3 +55,16 @@ def pair_rows(rows, splits, payloads, budgets, positions, per_split, count_token
                         "tokens": count_tokens(pair["clean"]), "position": None, "payload_start": None})
             break
     return out
+
+def document_pairs(docs, tasks, payloads, budgets, positions, count_tokens, rng):
+    """Attack/clean pairs from the authored documents: every document at every budget and position."""
+    rows = [{"id": f"doc-{d['id']}", "instruction": rng.choice(tasks), "context": d["text"]} for d in docs]
+    meta = {f"doc-{d['id']}": {"doc_id": d["id"], **{k: d[k] for k in ("genre", "hard_negative", "form", "provenance")}}
+            for d in docs}
+    splits = {r["id"]: "test" for r in rows}
+    out = []
+    for budget in budgets:
+        for position in positions:
+            for r in pair_rows(rows, splits, payloads, [budget], [position], len(rows), count_tokens, rng):
+                out.append({**r, **meta[r["frame_id"]]})
+    return out
