@@ -7,12 +7,12 @@ from pathlib import Path
 from scripts.balance import balance, band_of
 from scripts.dataset_v2 import frame_rows
 from scripts.integrity import assign_splits, drop_overlaps
-from scripts.sources import document_pairs, pair_rows, payload_bank, pool_rows
+from scripts.sources import document_pairs, filler_bank, pair_rows, payload_bank, pool_rows
 from scripts.visibility import mark_visibility
 
 SPECIAL_TOKENS = 2          # [CLS] and [SEP]
 COLUMNS = ["prompt", "label", "attack_type", "source", "split", "frame_id", "pair_id", "band", "tokens", "content_tokens",
-           "position", "payload_start", "visible", "doc_id", "genre", "hard_negative", "form", "provenance"]
+           "position", "payload_start", "payload_tokens", "visible", "doc_id", "genre", "hard_negative", "form", "provenance"]
 TASKS = ["Summarize the following text.", "List the main points of this text.", "What is the tone of this text?",
          "Rewrite this text in simpler words.", "Who is this text written for?", "Give this text a short title."]
 DEFAULTS = {
@@ -28,17 +28,18 @@ DEFAULTS = {
     "overlap_threshold": 0.7,
     "balance_cap": 400,                                                # per class, split and band
     "hard_negative_share": 0.5,                                        # at most this share of kept benign rows are hard negatives
+    "filler_per_size": 50,                                             # harmless fillers kept per split and token count
 }
 
 
-def _pairs_from_passages(rows, splits, payloads, cfg, count_tokens, rng):
+def _pairs_from_passages(rows, splits, payloads, cfg, count_tokens, rng, fillers):
     """Attack/clean pairs from passages, each passage used once; returns (pair rows, ids used)."""
     used, out = set(), []
     for budget in cfg["budgets"]:
         for position in cfg["positions"]:
             for split, cap in cfg["pair_cells"].items():
                 free = [r for r in rows if r["id"] not in used and splits[r["id"]] == split]
-                new = pair_rows(free, splits, payloads, [budget], [position], cap, count_tokens, rng)
+                new = pair_rows(free, splits, payloads, [budget], [position], cap, count_tokens, rng, fillers=fillers)
                 used |= {r["frame_id"] for r in new}
                 out += new
     return out, used
@@ -58,9 +59,14 @@ def build_dataset(frames, rows, count_tokens, rng, docs=None, v1_rows=None, task
 
     splits = assign_splits([r["id"] for r in rows], cfg["pool_fractions"], cfg["split_seed"])
     payloads = payload_bank(frames, cfg["payloads_per_family"], rng)
-    pairs, used = _pairs_from_passages(rows, splits, payloads, cfg, count_tokens, rng)
+    sizes = {count_tokens(p) for side in payloads.values() for p in side}
+    fillers = filler_bank(rows, splits, sizes, count_tokens, rng, cfg["filler_per_size"])
+    if docs and not fillers.get("test"):
+        raise ValueError("no harmless filler sentence for the test split")
+    pairs, used = _pairs_from_passages(rows, splits, payloads, cfg, count_tokens, rng, fillers)
     if docs:
-        pairs += document_pairs(docs, tasks or TASKS, payloads, cfg["budgets"], cfg["positions"], count_tokens, rng)
+        pairs += document_pairs(docs, tasks or TASKS, payloads, cfg["budgets"], cfg["positions"], count_tokens, rng,
+                                fillers=fillers["test"])
     pairs, visibility = mark_visibility(pairs, cfg["window"])
     plain += pool_rows(rows, splits, count_tokens, rng, exclude_ids=used)
 

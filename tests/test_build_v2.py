@@ -1,5 +1,7 @@
 import random
 
+import pytest
+
 from scripts.balance import band_of
 from scripts.build_v2 import COLUMNS, build_dataset
 from scripts.integrity import find_overlaps
@@ -177,3 +179,41 @@ def test_hard_negatives_are_not_drowned_out_by_plain_benign_rows():
     benign = [r for r in build()[0] if r["split"] == "train" and r["label"] == 0 and r["pair_id"] is None]
     hard = [r for r in benign if r["source"] in ("frames", "v1") or r["attack_type"] == "safe_tricky"]
     assert benign and len(hard) >= 0.3 * len(benign)
+
+
+def pairs_of(out):
+    pairs = {}
+    for r in out:
+        if r["pair_id"]:
+            pairs.setdefault(r["pair_id"], {})[r["label"]] = r
+    return pairs
+
+
+def test_both_members_of_every_pair_have_the_same_token_count():
+    pairs = pairs_of(build()[0])
+    assert pairs
+    for m in pairs.values():
+        assert m[0]["tokens"] == m[1]["tokens"] and m[0]["content_tokens"] == m[1]["content_tokens"]
+        assert m[0]["content_tokens"] == words(m[0]["prompt"]) == words(m[1]["prompt"])
+
+
+def test_attack_rows_record_the_payload_length_and_it_is_a_column():
+    assert "payload_tokens" in COLUMNS
+    for r in build()[0]:
+        if r["pair_id"]:
+            assert (r["payload_tokens"] is not None and r["payload_tokens"] > 0) == (r["label"] == 1)
+
+
+def test_a_pair_differs_only_inside_the_span_the_attack_row_declares():
+    pairs = pairs_of(build()[0])
+    assert pairs
+    for m in pairs.values():
+        a, c = m[1]["prompt"].split(), m[0]["prompt"].split()
+        start, n = m[1]["payload_start"], m[1]["payload_tokens"]
+        assert a[:start] == c[:start] and a[start + n:] == c[start + n:] and a[start:start + n] != c[start:start + n]
+
+
+def test_documents_without_any_test_filler_are_an_error():
+    alpaca_only = [r for r in make_rows() if r["id"].startswith("alpaca")]
+    with pytest.raises(ValueError, match="filler"):
+        build(rows=alpaca_only)
