@@ -45,16 +45,18 @@ def _harmless(sentence):
 def filler_bank(rows, splits, sizes, count_tokens, rng, per_size=50):
     """Harmless sentences for the clean twins: {split: {token count: [sentences]}} for the counts in sizes.
 
-    Each sentence comes from a passage of the same split, so a filler never carries text across splits."""
-    seen = defaultdict(set)
+    Each sentence comes from a passage of the same split, so a filler never carries text across splits; a sentence
+    that occurs in the passages of more than one split (Dolly repeats some) is left out."""
+    seen, where = defaultdict(set), defaultdict(set)
     for row in sorted(rows, key=lambda r: r["id"]):
         for text, _ in _units(row["context"]):
             if _harmless(text.strip()):
                 seen[splits[row["id"]]].add(text.strip())
+                where[text.strip()].add(splits[row["id"]])
     bank = {}
     for split, sentences in seen.items():
         found = defaultdict(list)
-        ordered = sorted(sentences)
+        ordered = sorted(s for s in sentences if len(where[s]) == 1)
         rng.shuffle(ordered)
         for text in ordered:
             n = count_tokens(text)

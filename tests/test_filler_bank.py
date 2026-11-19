@@ -95,3 +95,14 @@ def test_the_bank_works_as_the_fillers_of_pair_rows():
     assert len(out) == 4
     assert all(r["tokens"] == words(r["prompt"]) for r in out)
     assert len({r["tokens"] for r in out if r["pair_id"] == out[0]["pair_id"]}) == 1
+
+
+def test_a_sentence_found_in_the_passages_of_two_splits_is_offered_to_neither():
+    rows = [row(1, f"{GOOD} {sent(6, 'east')}"), row(2, f"{GOOD} {sent(6, 'west')}")]
+    bank = make(rows, {"dolly-1": "train", "dolly-2": "test"})
+    assert bank == {"train": {6: [sent(6, "east")]}, "test": {6: [sent(6, "west")]}}
+
+
+def test_a_sentence_repeated_inside_one_split_is_still_offered():
+    rows = [row(1, GOOD), row(2, GOOD)]
+    assert make(rows, {"dolly-1": "train", "dolly-2": "train"}) == {"train": {6: [GOOD]}}
