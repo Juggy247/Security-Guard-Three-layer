@@ -222,3 +222,10 @@ def test_documents_without_any_test_filler_are_an_error():
 def test_the_report_says_how_many_pairs_passed_the_pair_check():
     out, report = build()
     assert report["pair_check"] == {"pairs": sum(r["label"] == 1 and bool(r["pair_id"]) for r in out)}
+
+
+def test_the_report_has_a_length_audit_for_every_split_and_band():
+    out, report = build()
+    assert set(report["length_auc"]) == {f"{r['split']}|{r['band']}" for r in out}
+    for key, cell in report["length_auc"].items():
+        assert cell["attack"] == cell["benign"] and cell["attack"] >= cell["unpaired"]["attack"]
