@@ -126,12 +126,21 @@ def mirror(family, phrases, swap_slot, side, n, rng, exclude=()):
     return expand(_swap(family, phrases, swap_slot, side), side, n, rng, exclude)
 
 
-def long_pair(row, payload, position, budget, count_tokens, rng):
-    """An attack prompt and its clean twin from one Dolly row: the payload goes into the passage."""
+def long_pair(row, payload, position, budget, count_tokens, rng, fillers=None):
+    """An attack prompt and its clean twin from one Dolly row: the payload goes into the passage.
+
+    With fillers ({token count: [sentences]}) the twin gets one that has the payload's token count in its place,
+    so both prompts have the same length."""
     if not row["context"]:
         raise ValueError("row has no passage to put the payload in")
+    n_payload = count_tokens(payload)
+    filler = None
+    if fillers is not None:
+        if not fillers.get(n_payload):
+            raise ValueError(f"no filler with {n_payload} tokens")
+        filler = rng.choice(fillers[n_payload])
     room = budget - count_tokens(row["instruction"])
-    r = embed(payload, row["context"], position, room, count_tokens)
+    r = embed(payload, row["context"], position, room, count_tokens, filler)
     if not r["twin"]:
         raise ValueError("no passage sentence fits in the budget")
     first = rng.random() < 0.5
@@ -143,6 +152,7 @@ def long_pair(row, payload, position, budget, count_tokens, rng):
         "clean": clean,
         "tokens": count_tokens(attack),
         "payload_start": count_tokens(attack[:idx]) if attack[:idx].strip() else 0,
+        "payload_tokens": n_payload,
         "instruction_first": first,
     }
 
