@@ -68,16 +68,19 @@ def pair_rows(rows, splits, payloads, budgets, positions, per_split, count_token
             break
     return out
 
-def document_pairs(docs, tasks, payloads, budgets, positions, count_tokens, rng):
-    """Attack/clean pairs from the authored documents: every document at every budget and position."""
+def document_pairs(docs, tasks, payloads, budgets, positions, count_tokens, rng, fillers=None):
+    """Attack/clean pairs from the authored documents: every document at every budget and position.
+
+    With fillers ({token count: [sentences]}, the test bank) each clean twin gets one of the payload's length."""
     rows = [{"id": f"doc-{d['id']}", "instruction": rng.choice(tasks), "context": d["text"]} for d in docs]
     meta = {f"doc-{d['id']}": {"doc_id": d["id"], **{k: d[k] for k in ("genre", "hard_negative", "form", "provenance")}}
             for d in docs}
     splits = {r["id"]: "test" for r in rows}
+    bank = None if fillers is None else {"test": fillers}
     out = []
     for budget in budgets:
         for position in positions:
-            for r in pair_rows(rows, splits, payloads, [budget], [position], len(rows), count_tokens, rng):
+            for r in pair_rows(rows, splits, payloads, [budget], [position], len(rows), count_tokens, rng, fillers=bank):
                 out.append({**r, **meta[r["frame_id"]]})
     return out
 
