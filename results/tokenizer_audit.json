@@ -1,0 +1,554 @@
+{
+  "answerdotai/ModernBERT-base": {
+    "cased": true,
+    "length": {
+      "test": {
+        "auc": 0.501,
+        "mean_diff": 0.258,
+        "share_unequal": 0.687
+      },
+      "train": {
+        "auc": 0.503,
+        "mean_diff": -0.096,
+        "share_unequal": 0.755
+      },
+      "validation": {
+        "auc": 0.501,
+        "mean_diff": 0.272,
+        "share_unequal": 0.753
+      }
+    },
+    "length_by_band": {
+      "test|128-256": {
+        "auc": 0.503,
+        "mean_diff": 0.122,
+        "pairs": 197,
+        "share_unequal": 0.69
+      },
+      "test|256-512": {
+        "auc": 0.501,
+        "mean_diff": 0.29,
+        "pairs": 131,
+        "share_unequal": 0.664
+      },
+      "test|32-64": {
+        "auc": 0.516,
+        "mean_diff": 0.441,
+        "pairs": 111,
+        "share_unequal": 0.712
+      },
+      "test|512+": {
+        "auc": 0.526,
+        "mean_diff": -0.619,
+        "pairs": 21,
+        "share_unequal": 0.476
+      },
+      "test|64-128": {
+        "auc": 0.508,
+        "mean_diff": 0.379,
+        "pairs": 169,
+        "share_unequal": 0.71
+      },
+      "train|128-256": {
+        "auc": 0.502,
+        "mean_diff": -0.078,
+        "pairs": 116,
+        "share_unequal": 0.802
+      },
+      "train|256-512": {
+        "auc": 0.503,
+        "mean_diff": -0.242,
+        "pairs": 62,
+        "share_unequal": 0.758
+      },
+      "train|32-64": {
+        "auc": 0.528,
+        "mean_diff": -0.357,
+        "pairs": 168,
+        "share_unequal": 0.702
+      },
+      "train|512+": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 2,
+        "share_unequal": 1.0
+      },
+      "train|64-128": {
+        "auc": 0.502,
+        "mean_diff": 0.152,
+        "pairs": 204,
+        "share_unequal": 0.77
+      },
+      "validation|128-256": {
+        "auc": 0.515,
+        "mean_diff": 0.778,
+        "pairs": 18,
+        "share_unequal": 0.722
+      },
+      "validation|256-512": {
+        "auc": 0.5,
+        "mean_diff": -0.5,
+        "pairs": 6,
+        "share_unequal": 0.833
+      },
+      "validation|32-64": {
+        "auc": 0.515,
+        "mean_diff": 0.042,
+        "pairs": 24,
+        "share_unequal": 0.708
+      },
+      "validation|512+": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 2,
+        "share_unequal": 1.0
+      },
+      "validation|64-128": {
+        "auc": 0.507,
+        "mean_diff": 0.323,
+        "pairs": 31,
+        "share_unequal": 0.774
+      }
+    },
+    "pairs": {
+      "test": 629,
+      "train": 552,
+      "validation": 81
+    },
+    "visibility": {
+      "test": {
+        "dataset_hidden": 195,
+        "disagree": 20,
+        "hidden": 215,
+        "pairs": 629
+      },
+      "train": {
+        "dataset_hidden": 0,
+        "disagree": 15,
+        "hidden": 15,
+        "pairs": 552
+      },
+      "validation": {
+        "dataset_hidden": 0,
+        "disagree": 3,
+        "hidden": 3,
+        "pairs": 81
+      }
+    },
+    "window": 126
+  },
+  "distilbert-base-uncased": {
+    "cased": false,
+    "length": {
+      "test": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "share_unequal": 0.0
+      },
+      "train": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "share_unequal": 0.0
+      },
+      "validation": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "share_unequal": 0.0
+      }
+    },
+    "length_by_band": {
+      "test|128-256": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 197,
+        "share_unequal": 0.0
+      },
+      "test|256-512": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 131,
+        "share_unequal": 0.0
+      },
+      "test|32-64": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 111,
+        "share_unequal": 0.0
+      },
+      "test|512+": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 21,
+        "share_unequal": 0.0
+      },
+      "test|64-128": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 169,
+        "share_unequal": 0.0
+      },
+      "train|128-256": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 116,
+        "share_unequal": 0.0
+      },
+      "train|256-512": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 62,
+        "share_unequal": 0.0
+      },
+      "train|32-64": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 168,
+        "share_unequal": 0.0
+      },
+      "train|512+": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 2,
+        "share_unequal": 0.0
+      },
+      "train|64-128": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 204,
+        "share_unequal": 0.0
+      },
+      "validation|128-256": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 18,
+        "share_unequal": 0.0
+      },
+      "validation|256-512": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 6,
+        "share_unequal": 0.0
+      },
+      "validation|32-64": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 24,
+        "share_unequal": 0.0
+      },
+      "validation|512+": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 2,
+        "share_unequal": 0.0
+      },
+      "validation|64-128": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 31,
+        "share_unequal": 0.0
+      }
+    },
+    "pairs": {
+      "test": 629,
+      "train": 552,
+      "validation": 81
+    },
+    "visibility": {
+      "test": {
+        "dataset_hidden": 195,
+        "disagree": 0,
+        "hidden": 195,
+        "pairs": 629
+      },
+      "train": {
+        "dataset_hidden": 0,
+        "disagree": 0,
+        "hidden": 0,
+        "pairs": 552
+      },
+      "validation": {
+        "dataset_hidden": 0,
+        "disagree": 0,
+        "hidden": 0,
+        "pairs": 81
+      }
+    },
+    "window": 126
+  },
+  "microsoft/deberta-v3-base": {
+    "cased": true,
+    "length": {
+      "test": {
+        "auc": 0.506,
+        "mean_diff": 0.601,
+        "share_unequal": 0.569
+      },
+      "train": {
+        "auc": 0.5,
+        "mean_diff": 0.02,
+        "share_unequal": 0.607
+      },
+      "validation": {
+        "auc": 0.505,
+        "mean_diff": 0.407,
+        "share_unequal": 0.605
+      }
+    },
+    "length_by_band": {
+      "test|128-256": {
+        "auc": 0.51,
+        "mean_diff": 0.462,
+        "pairs": 197,
+        "share_unequal": 0.594
+      },
+      "test|256-512": {
+        "auc": 0.506,
+        "mean_diff": 0.557,
+        "pairs": 131,
+        "share_unequal": 0.511
+      },
+      "test|32-64": {
+        "auc": 0.56,
+        "mean_diff": 0.838,
+        "pairs": 111,
+        "share_unequal": 0.64
+      },
+      "test|512+": {
+        "auc": 0.505,
+        "mean_diff": 0.333,
+        "pairs": 21,
+        "share_unequal": 0.476
+      },
+      "test|64-128": {
+        "auc": 0.519,
+        "mean_diff": 0.675,
+        "pairs": 169,
+        "share_unequal": 0.55
+      },
+      "train|128-256": {
+        "auc": 0.502,
+        "mean_diff": 0.103,
+        "pairs": 116,
+        "share_unequal": 0.603
+      },
+      "train|256-512": {
+        "auc": 0.504,
+        "mean_diff": -0.113,
+        "pairs": 62,
+        "share_unequal": 0.581
+      },
+      "train|32-64": {
+        "auc": 0.503,
+        "mean_diff": 0.06,
+        "pairs": 168,
+        "share_unequal": 0.595
+      },
+      "train|512+": {
+        "auc": 0.5,
+        "mean_diff": 0.5,
+        "pairs": 2,
+        "share_unequal": 1.0
+      },
+      "train|64-128": {
+        "auc": 0.501,
+        "mean_diff": -0.025,
+        "pairs": 204,
+        "share_unequal": 0.623
+      },
+      "validation|128-256": {
+        "auc": 0.506,
+        "mean_diff": 0.333,
+        "pairs": 18,
+        "share_unequal": 0.667
+      },
+      "validation|256-512": {
+        "auc": 0.556,
+        "mean_diff": 1.0,
+        "pairs": 6,
+        "share_unequal": 0.667
+      },
+      "validation|32-64": {
+        "auc": 0.523,
+        "mean_diff": 0.458,
+        "pairs": 24,
+        "share_unequal": 0.833
+      },
+      "validation|512+": {
+        "auc": 0.625,
+        "mean_diff": 0.5,
+        "pairs": 2,
+        "share_unequal": 0.5
+      },
+      "validation|64-128": {
+        "auc": 0.507,
+        "mean_diff": 0.29,
+        "pairs": 31,
+        "share_unequal": 0.387
+      }
+    },
+    "pairs": {
+      "test": 629,
+      "train": 552,
+      "validation": 81
+    },
+    "visibility": {
+      "test": {
+        "dataset_hidden": 195,
+        "disagree": 7,
+        "hidden": 190,
+        "pairs": 629
+      },
+      "train": {
+        "dataset_hidden": 0,
+        "disagree": 0,
+        "hidden": 0,
+        "pairs": 552
+      },
+      "validation": {
+        "dataset_hidden": 0,
+        "disagree": 0,
+        "hidden": 0,
+        "pairs": 81
+      }
+    },
+    "window": 126
+  },
+  "roberta-base": {
+    "cased": true,
+    "length": {
+      "test": {
+        "auc": 0.503,
+        "mean_diff": 0.471,
+        "share_unequal": 0.625
+      },
+      "train": {
+        "auc": 0.503,
+        "mean_diff": 0.471,
+        "share_unequal": 0.772
+      },
+      "validation": {
+        "auc": 0.501,
+        "mean_diff": 0.506,
+        "share_unequal": 0.778
+      }
+    },
+    "length_by_band": {
+      "test|128-256": {
+        "auc": 0.502,
+        "mean_diff": 0.406,
+        "pairs": 197,
+        "share_unequal": 0.635
+      },
+      "test|256-512": {
+        "auc": 0.503,
+        "mean_diff": 0.412,
+        "pairs": 131,
+        "share_unequal": 0.595
+      },
+      "test|32-64": {
+        "auc": 0.53,
+        "mean_diff": 0.721,
+        "pairs": 111,
+        "share_unequal": 0.676
+      },
+      "test|512+": {
+        "auc": 0.509,
+        "mean_diff": -0.286,
+        "pairs": 21,
+        "share_unequal": 0.571
+      },
+      "test|64-128": {
+        "auc": 0.511,
+        "mean_diff": 0.521,
+        "pairs": 169,
+        "share_unequal": 0.609
+      },
+      "train|128-256": {
+        "auc": 0.508,
+        "mean_diff": 0.44,
+        "pairs": 116,
+        "share_unequal": 0.828
+      },
+      "train|256-512": {
+        "auc": 0.503,
+        "mean_diff": 0.387,
+        "pairs": 62,
+        "share_unequal": 0.774
+      },
+      "train|32-64": {
+        "auc": 0.505,
+        "mean_diff": 0.208,
+        "pairs": 168,
+        "share_unequal": 0.792
+      },
+      "train|512+": {
+        "auc": 0.5,
+        "mean_diff": 0.5,
+        "pairs": 2,
+        "share_unequal": 1.0
+      },
+      "train|64-128": {
+        "auc": 0.511,
+        "mean_diff": 0.73,
+        "pairs": 204,
+        "share_unequal": 0.721
+      },
+      "validation|128-256": {
+        "auc": 0.548,
+        "mean_diff": 1.556,
+        "pairs": 18,
+        "share_unequal": 0.778
+      },
+      "validation|256-512": {
+        "auc": 0.528,
+        "mean_diff": -0.667,
+        "pairs": 6,
+        "share_unequal": 0.333
+      },
+      "validation|32-64": {
+        "auc": 0.545,
+        "mean_diff": -0.208,
+        "pairs": 24,
+        "share_unequal": 0.75
+      },
+      "validation|512+": {
+        "auc": 0.5,
+        "mean_diff": 0.0,
+        "pairs": 2,
+        "share_unequal": 1.0
+      },
+      "validation|64-128": {
+        "auc": 0.509,
+        "mean_diff": 0.71,
+        "pairs": 31,
+        "share_unequal": 0.871
+      }
+    },
+    "pairs": {
+      "test": 629,
+      "train": 552,
+      "validation": 81
+    },
+    "visibility": {
+      "test": {
+        "dataset_hidden": 195,
+        "disagree": 21,
+        "hidden": 216,
+        "pairs": 629
+      },
+      "train": {
+        "dataset_hidden": 0,
+        "disagree": 14,
+        "hidden": 14,
+        "pairs": 552
+      },
+      "validation": {
+        "dataset_hidden": 0,
+        "disagree": 2,
+        "hidden": 2,
+        "pairs": 81
+      }
+    },
+    "window": 126
+  }
+}
