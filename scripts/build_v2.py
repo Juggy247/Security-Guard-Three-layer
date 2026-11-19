@@ -1,5 +1,8 @@
 """Assemble dataset v2 from the frames, the public pools, the authored documents and the v1 rows."""
+import csv
+import json
 from collections import Counter
+from pathlib import Path
 
 from scripts.balance import balance, band_of
 from scripts.dataset_v2 import frame_rows
@@ -87,3 +90,18 @@ def build_dataset(frames, rows, count_tokens, rng, docs=None, v1_rows=None, task
         "unverified_long_attacks": sum(r["label"] == 1 and r["pair_id"] is None and r["content_tokens"] > cfg["window"] for r in out),
     }
     return out, report
+
+
+def write_dataset(rows, report, out_dir):
+    """Write dataset_v2_{train,validation,test}.csv and report.json into out_dir."""
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    for split in ("train", "validation", "test"):
+        with open(out / f"dataset_v2_{split}.csv", "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=COLUMNS, lineterminator="\n", extrasaction="ignore")
+            writer.writeheader()
+            for r in rows:
+                if r["split"] == split:
+                    writer.writerow({k: "" if r.get(k) is None else r[k] for k in COLUMNS})
+    with open(out / "report.json", "w") as f:
+        json.dump(report, f, indent=2, sort_keys=True)
