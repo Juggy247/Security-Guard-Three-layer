@@ -4,6 +4,7 @@ from collections import defaultdict
 
 from scripts.dataset_v2 import SPLIT_SIDE, long_pair
 from scripts.public_pools import is_tricky, to_prompt
+from scripts.dataset_v2 import SIDES, SPLIT_SIDE, available, expand, long_pair
 
 
 def _source(row_id):
@@ -68,3 +69,17 @@ def document_pairs(docs, tasks, payloads, budgets, positions, count_tokens, rng)
             for r in pair_rows(rows, splits, payloads, [budget], [position], len(rows), count_tokens, rng):
                 out.append({**r, **meta[r["frame_id"]]})
     return out
+
+def payload_bank(frames, per_family, rng, families=None):
+    """Attack sentences for the embedded pairs: up to per_family distinct texts per attack family, for each side."""
+    names = families or list(frames["attack"])
+    bank = {}
+    for side in SIDES:
+        texts = []
+        for name in names:
+            family = frames["attack"][name]
+            k = min(per_family, available(family, side))
+            if k:
+                texts += [item["text"] for item in expand(family, side, k, rng)]
+        bank[side] = texts
+    return bank
