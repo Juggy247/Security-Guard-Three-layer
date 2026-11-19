@@ -61,8 +61,8 @@ def make_rows():
     r = random.Random(1)
     rows = []
     for i in range(300):                                                      # short benign prompts
-        rows.append({"id": f"alpaca-{i}", "instruction": f"Please explain {r.choice(VOCAB)} and {r.choice(VOCAB)} "
-                     f"in the setting of {r.choice(VOCAB)} for {r.choice(VOCAB)} readers.", "context": "", "category": "alpaca"})
+        text = " ".join(r.choice(VOCAB) for _ in range(r.randint(2, 30)))                  # short prompts of many lengths
+        rows.append({"id": f"alpaca-{i}", "instruction": f"Explain {text}.", "context": "", "category": "alpaca"})
     for i in range(120):                                                      # passages with an instruction
         rows.append({"id": f"dolly-{i}", "instruction": "Summarize this passage briefly.",
                      "context": " ".join(sentence(r) for _ in range(20)), "category": "summarization"})
