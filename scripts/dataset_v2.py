@@ -10,7 +10,7 @@ SCHEMES = ("base64", "rot13", "leet", "reversed", "spaced")
 BENIGN_TYPE = {"compound": "safe", "tricky": "safe_tricky"}
 LEET = str.maketrans("aeiostAEIOST", "431057431057")      # a->4 e->3 i->1 o->0 s->5 t->7
 SLOT = re.compile(r"\{(\w+)\}")
-SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
+BREAK = re.compile(r"((?<=[.!?])\s+|[ \t]*\n\s*)")      # after . ! ? and at every line break
 
 
 def _candidates(family, side, exclude=()):
@@ -60,6 +60,12 @@ def encode(text, scheme):
     raise ValueError(f"unknown scheme: {scheme}")
 
 
+def _units(text):
+    """(sentence, whitespace that followed it) pairs; the text is cut after . ! ? and at line breaks."""
+    parts = BREAK.split(text.strip())
+    return [(parts[i], parts[i + 1] if i + 1 < len(parts) else "") for i in range(0, len(parts), 2)]
+
+
 def embed(payload, carrier, position, budget, count_tokens):
     """Put payload into carrier at a relative position (0 = start, 1 = end) within a token budget."""
     if not 0 <= position <= 1:
@@ -68,20 +74,24 @@ def embed(payload, carrier, position, budget, count_tokens):
     if room < 0:
         raise ValueError("payload alone exceeds the budget")
     kept, used = [], 0
-    for sentence in SENTENCE_END.split(carrier.strip()):
-        cost = count_tokens(sentence)
+    for unit in _units(carrier):
+        cost = count_tokens(unit[0])
         if used + cost > room:
             break
-        kept.append(sentence)
+        kept.append(unit)
         used += cost
     k = round(position * len(kept))
     before, after = kept[:k], kept[k:]
-    text = " ".join(before + [payload] + after)
+    join = lambda units: "".join(text + sep for text, sep in units)
+    seps = [sep for _, sep in kept if sep]                   # at the very end of the carrier reuse the last separator seen
+    boundary = (before[-1][1] if before else kept[0][1] if kept else "") or (seps[-1] if seps else " ")
+    lead = join(before) + ("" if not before or before[-1][1] else boundary)
+    text = lead + payload + (boundary + join(after).rstrip() if after else "")
     return {
         "text": text,
         "tokens": count_tokens(text),
-        "payload_start": count_tokens(" ".join(before)) if before else 0,
-        "twin": " ".join(before + after),          # the same text without the payload
+        "payload_start": count_tokens(lead.rstrip()) if before else 0,
+        "twin": join(kept).rstrip(),               # the same text without the payload
     }
 
 
