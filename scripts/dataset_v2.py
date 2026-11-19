@@ -66,11 +66,17 @@ def _units(text):
     return [(parts[i], parts[i + 1] if i + 1 < len(parts) else "") for i in range(0, len(parts), 2)]
 
 
-def embed(payload, carrier, position, budget, count_tokens):
-    """Put payload into carrier at a relative position (0 = start, 1 = end) within a token budget."""
+def embed(payload, carrier, position, budget, count_tokens, filler=None):
+    """Put payload into carrier at a relative position (0 = start, 1 = end) within a token budget.
+
+    With a filler (same token count as the payload) the twin carries the filler in the payload's place,
+    so attack and twin have the same length and the same layout."""
     if not 0 <= position <= 1:
         raise ValueError("position must be between 0 and 1")
-    room = budget - count_tokens(payload)
+    n_payload = count_tokens(payload)
+    if filler is not None and count_tokens(filler) != n_payload:
+        raise ValueError("filler must have the same token count as the payload")
+    room = budget - n_payload
     if room < 0:
         raise ValueError("payload alone exceeds the budget")
     kept, used = [], 0
@@ -86,12 +92,14 @@ def embed(payload, carrier, position, budget, count_tokens):
     seps = [sep for _, sep in kept if sep]                   # at the very end of the carrier reuse the last separator seen
     boundary = (before[-1][1] if before else kept[0][1] if kept else "") or (seps[-1] if seps else " ")
     lead = join(before) + ("" if not before or before[-1][1] else boundary)
-    text = lead + payload + (boundary + join(after).rstrip() if after else "")
+    build = lambda insert: lead + insert + (boundary + join(after).rstrip() if after else "")
+    text = build(payload)
     return {
         "text": text,
         "tokens": count_tokens(text),
         "payload_start": count_tokens(lead.rstrip()) if before else 0,
-        "twin": join(kept).rstrip(),               # the same text without the payload
+        "payload_tokens": n_payload,
+        "twin": build(filler) if filler is not None and kept else join(kept).rstrip(),     # same text without the payload
     }
 
 
